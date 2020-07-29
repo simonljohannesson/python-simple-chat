@@ -11,8 +11,10 @@ def main():
     
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
         client_socket.connect(server_address)
-        client_socket.sendall(b'Hi there!')
-        print("Data sent: 'Hi there!")
+        send_bytes = b'Hello darkness my old friend!'
+        client_socket.sendall(send_bytes)
+        print("Data sent: {} to {}:{}".format(
+            send_bytes, server_address[0], server_address[1]))
         
 
 if __name__ == "__main__":
