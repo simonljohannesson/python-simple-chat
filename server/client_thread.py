@@ -16,12 +16,14 @@ class ClientThread(threading.Thread):
     def __init__(self, client_socket: socket.socket):
         threading.Thread.__init__(self)
         self.client_socket = client_socket
-        # TODO: self.listeners ?
     
     def run(self):
         received_message = self._receive_client_message()
         print(received_message.msg_content)
-    
+        # if not received_message.check_message_structure_valid():
+        #     return
+        # self._act_on_message(received_message)
+        
     def _receive_client_message(self) -> server.message.Message:
         """Handles the connection with the client socket.
         TODO: could send information by having a listener or reference to msg parser
@@ -66,3 +68,8 @@ class ClientThread(threading.Thread):
                 bytes_rcvd += data
             msg_content = server.message.deserialize_content(bytes_rcvd[:msg_content_length])
             return server.message.Message(msg_content)
+        # does this connection need to stay open in order to send back information?
+        
+    def _act_on_message(self, message: server.message.Message):
+        # call database handler with the appropriate function
+        raise NotImplementedError

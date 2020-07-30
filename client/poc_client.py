@@ -9,7 +9,7 @@ def main():
     server_hostname = "127.0.0.1"
     server_port_no = 7896
     server_address = (server_hostname, server_port_no)
-    
+    # for i in range(1000):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
         client_socket.connect(server_address)
         send_bytes = b'\x00<{"length": "52", "byteorder": "little", "encoding": "UTF-8"}{"action": "announcement", "content": "working"}'
@@ -20,4 +20,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
+
