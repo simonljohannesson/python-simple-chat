@@ -5,6 +5,7 @@ from random import randint
 from typing import Tuple
 from threading import Lock
 
+#TODO: add documentation for: database configuration/function, functions and the lock
 
 class DatabaseHandler:
     database_lock = Lock()

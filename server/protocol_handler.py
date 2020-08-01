@@ -1,4 +1,29 @@
 # protocol_handler.py
+"""The purpose of this module is to handle the serialization and deserialization
+of a Message object, and it is designed to do so while complying with the below
+specification of a serialized message.
+
+Specification of a serialized message.
+    A serialized message shall be composed of three parts, (1) a fixed length
+    header, (2) a variable length header and (3) message content. There shall
+    be nothing between the parts.
+    
+    1. Fixed length header
+        * An integer that denotes the length of (2) the variable length header.
+        * Shall be two bytes long, in big-endian/network byteorder.
+    2. Variable length header
+        * A JSON object
+        * Shall contain key "length": non-empty string denoting the length of (3) the message content.
+        * Shall contain key "encoding" : non-empty string containing the encoding of (3) the message content
+        * Shall contain key "byteorder" : non-empty string denoting byteorder used encoding (3) the message content.
+        * Is encoded in UTF-8
+        * Is of variable length.
+    3. Message content
+        * JSON object
+        * Shall contain key "type": non-empty string denoting the message type value.
+        * Shall contain key "content", string containing the message content.
+        * Is of variable length.
+"""
 from server.message import Message
 from typing import Dict
 import json

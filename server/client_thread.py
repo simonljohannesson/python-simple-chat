@@ -6,7 +6,7 @@ import socket
 from server.message import *
 from server import protocol_handler
 
-
+# TODO: rename this class
 class ClientThread(threading.Thread):
     """
     Class used to dispatch threads that handles client connections.
