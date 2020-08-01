@@ -14,7 +14,7 @@ def open_server_connection(address: Tuple[str, int]):
         while True:
             client_socket, client_addr = server_socket.accept()
             print("Connected to {}:{}".format(client_addr[0], client_addr[1]))
-            client_thread = ClientThread(client_socket)  # TODO: send ref to message parser
+            client_thread = ClientThread(client_socket)  # TODO: send ref to message parser?
             client_thread.run()
 
 
