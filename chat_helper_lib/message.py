@@ -42,7 +42,7 @@ class Message:
         :param receiver: name of receiver
         """
         
-        self.msg_type = str(msg_type)
+        self.msg_type = msg_type
         self.content = content
         self.sender = sender
         self.receiver = receiver

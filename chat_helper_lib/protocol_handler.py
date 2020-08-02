@@ -117,22 +117,17 @@ def reassemble_message(message_content: Dict[str, str]) -> Message:
     :raises ProtocolViolationError: raised if the dictionary message_content violates the protocol
     """
     error_msg_format = "The format of argument 'message_content' was incorrect."
-    
-    for key in message_content:
-        if type(message_content[key]) is not str:
-            print(message_content[key], type(message_content[key]))
-            raise ProtocolViolationError(error_msg_format)
         
-    msg_type = message_content["msg_type"]
-    content = message_content["content"]
-    sender = message_content["sender"]
-    receiver = message_content["receiver"]
     try:
+        msg_type = message_content["msg_type"]
+        content = message_content["content"]
+        sender = message_content["sender"]
+        receiver = message_content["receiver"]
         reassembled_msg = Message(
-            msg_type=int(msg_type),  # msg_type should be an integer
-            content=content,
-            sender=sender,
-            receiver=receiver)
+                msg_type=int(msg_type),  # msg_type should be an integer
+                content=content,
+                sender=sender,
+                receiver=receiver)
         return reassembled_msg
     except (KeyError, TypeError) as exception:
         raise ProtocolViolationError(error_msg_format)

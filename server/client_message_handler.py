@@ -5,9 +5,11 @@ import threading
 import socket
 from chat_helper_lib.message import *
 from chat_helper_lib import protocol_handler
+from server.database_handler import DatabaseHandler,NotPresentInDatabase
+# test module
+# from server.test import dump_data_in_chat_messages_amount_table, dump_data_in_chat_messages_table
 
 
-# TODO: rename this class
 class ClientMessageHandlerThread(threading.Thread):
     """
     Class used to dispatch threads that handles client connections.
@@ -15,21 +17,24 @@ class ClientMessageHandlerThread(threading.Thread):
     Attributes:
         client_socket (socket): The socket used to connect to client.
     """
-    def __init__(self, client_socket: socket.socket):
+    def __init__(self,
+                 client_socket: socket.socket,
+                 db_handler: DatabaseHandler):
         threading.Thread.__init__(self)
         self.client_socket = client_socket
+        self.db_handler = db_handler
     
     def run(self):
         received_message = self._receive_client_message()
         print(received_message)
-        # if not received_message.check_message_structure_valid():
-        #     return
-        # self._act_on_message(received_message)
+        self._determine_action(received_message)
+        # test functions
+        # dump_data_in_chat_messages_table(self.db_handler)
+        # dump_data_in_chat_messages_amount_table(self.db_handler)
         
     def _receive_client_message(self) -> Message:
         """Handles the connection with the client socket.
-        TODO: could send information by having a listener or reference to msg parser
-        TODO: refactor to something slightly more clever
+        TODO: refactor, there is a more clever solution
         """
         buffer_length = 0
         fix_header = 0
@@ -44,7 +49,6 @@ class ClientMessageHandlerThread(threading.Thread):
                     break                       # TODO: throw exception?
                 buffer_length += len(data)
                 buffer += data
-            # TODO: message.deserialize_content should throw exception
             fix_header = protocol_handler.deserialize_two_byte_header(buffer[:2])
             buffer = buffer[2:]
             buffer_length = len(buffer)
@@ -54,10 +58,11 @@ class ClientMessageHandlerThread(threading.Thread):
             while buffer_length < json_header_length:
                 data = s.recv(32)
                 if not data:
-                    break                       # TODO: throw exception?
+                    break
+                    # TODO: throw exception?
                 buffer_length += len(data)
                 buffer += data
-            # TODO: message.deserialize_var_len_head throws exception
+            # TODO: handle the MessageCorruptError
             json_header = protocol_handler.deserialize_json_object(buffer[:fix_header])
             buffer = buffer[fix_header:]
             buffer_length = len(buffer)
@@ -67,17 +72,29 @@ class ClientMessageHandlerThread(threading.Thread):
             while buffer_length < msg_content_length:
                 data = s.recv(32)
                 if not data:
-                    break                       # TODO: throw exception?
+                    break
+                    # TODO: throw exception?
                 buffer_length += len(data)
                 buffer += data
-            # TODO: message.deserialize_content throws exception
+            # TODO: handle the MessageCorruptError
             msg_content = protocol_handler.deserialize_json_object(buffer[:msg_content_length])
-            # code will break here because Message now takes a msg msg_type and message not a dict.
-            # raise NotImplementedError
+            # TODO: handle the ProtocolViolationError
             message = protocol_handler.reassemble_message(msg_content)
             return message
         # does this connection need to stay open in order to send back information?
         
-    def _act_on_message(self, message: Message):
-        # call database handler with the appropriate function
-        raise NotImplementedError
+    def _determine_action(self, message: Message):
+        """
+        Determines what action should be taken for a message.
+        
+        :param message:
+        :return:
+        """
+        if message.msg_type == Message.TYPE_CHAT_MESSAGE:
+            self.db_handler.add_chat_message_to_database(message)
+        elif message.msg_type == Message.TYPE_REQUEST_NEW_MESSAGES:
+            raise NotImplementedError("TYPE_REQUEST_NEW_MESSAGES not implemented")
+        else:
+            raise NotImplementedError(
+                "Message type with value {} is not implemented".format(
+                    message.msg_type))
