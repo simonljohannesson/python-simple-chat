@@ -236,9 +236,9 @@ def add_chat_message_to_database(connection: sqlite3.Connection,
     :param message: the message that should be saved
     :return: None
     """
-    msg = message.msg_content["content"]
-    sender = message.msg_content["sender"]
-    receiver = message.msg_content["receiver"]
+    msg = message.content
+    sender = message.sender
+    receiver = message.receiver
     
     chat_id = _create_chat_identifier(sender, receiver)
     msg_number = _query_total_message_amount(connection, chat_id)
