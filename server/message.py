@@ -18,7 +18,7 @@ class Message:
             * sender:       non-empty string
             * receiver:     non-empty string
     
-    Attributes:
+    Attributes
         TYPE_CHAT_MESSAGE -- message type used when message is a chat message
         TYPE_REQUEST_NEW_MESSAGES -- message type used when requesting new
                                      messages that are available on server.

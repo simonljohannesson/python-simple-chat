@@ -41,6 +41,12 @@ class MessageCorruptError(Exception):
 
 
 def serialize_message(message: Message) -> bytes:
+    """
+    Takes a message and serializes it according to the protocol specification.
+    
+    :param message: the message that should be serialized
+    :return: the serialized message
+    """
     encoding = "UTF-8"
     # message content
     msg_content_serialized = json.dumps(message.msg_content).encode(encoding)
@@ -65,8 +71,8 @@ def deserialize_two_byte_header(serialized_fixed_header: bytes) -> int:
     Caller should make sure that the length of the header is correct when
     calling the function.
     
-    :param serialized_fixed_header:
-    :return:
+    :param serialized_fixed_header: the two bytes that should be deserialized
+    :return: the integer value of the two byte header
     """
     if len(serialized_fixed_header) != 2:
         raise ValueError(
@@ -77,6 +83,15 @@ def deserialize_two_byte_header(serialized_fixed_header: bytes) -> int:
 
 
 def deserialize_json_object(json_object: bytes) -> Dict[str, str]:
+    """
+    Deserializes a JSON object.
+    
+    Is used to deserialize the variable length header or the message content.
+    :param json_object: the JSON object that should be deserialized
+    :raises MessageCorruptError: if the object entered is incomplete or has an
+    invalid structure
+    :return: a python dictionary corresponding to the JSON object
+    """
     try:
         message_dictionary = json.loads(json_object)
         return message_dictionary
@@ -85,13 +100,31 @@ def deserialize_json_object(json_object: bytes) -> Dict[str, str]:
 
 
 def reassemble_message(message_content: Dict[str, str]) -> Message:
+    """
+    Reassembles message from python dictionary.
+     
+     The dictionary should be directly received from the function
+     deserialize_json_object and not have been altered.
+    :param message_content: dictionary used to reassemble message
+    :return: a reassembled message as it should have looked before being serialized
+    :raises ProtocolViolationError: raised if the dictionary message_content violates the protocol
+    """
+    error_msg_format = "The format of argument 'message_content' was incorrect."
+    
+    for key in message_content:
+        if type(message_content[key]) is not str:
+            raise ProtocolViolationError(error_msg_format)
+        
+    msg_type = message_content["type"]
+    content = message_content["content"]
+    sender = message_content["sender"]
+    receiver = message_content["receiver"]
     try:
         reassembled_msg = Message(
-            int(message_content["type"]),  # type should be an integer
-            message_content["content"],
-            message_content["sender"],
-            message_content["receiver"])
+            msg_type=int(msg_type),  # type should be an integer
+            content=content,
+            sender=sender,
+            receiver=receiver)
         return reassembled_msg
     except (KeyError, TypeError) as exception:
-        raise ProtocolViolationError(
-            "The format of argument 'message_content' was incorrect.")
+        raise ProtocolViolationError(error_msg_format)

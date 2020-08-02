@@ -8,6 +8,7 @@ from threading import Lock
 #TODO: add documentation for: database configuration/function, functions and the lock
 
 class DatabaseHandler:
+    # TODO: make sure that this works as intended
     database_lock = Lock()
 
 
