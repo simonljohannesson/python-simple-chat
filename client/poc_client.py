@@ -2,7 +2,6 @@
 
 
 import socket
-import sys
 from server.message import *
 from server import protocol_handler
 
@@ -19,7 +18,6 @@ def main():
     
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
         client_socket.connect(server_address)
-        # send_bytes = b'\x00<{"length": "52", "byteorder": "little", "encoding": "UTF-8"}{"action": "announcement", "content": "working"}'
         send_bytes = serialized_msg
         client_socket.sendall(send_bytes)
         print("Data sent: {} to {}:{}".format(
