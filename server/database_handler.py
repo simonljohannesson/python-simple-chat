@@ -61,153 +61,156 @@ from typing import Tuple
 from threading import Lock
 from chat_helper_lib.message import Message
 
-#TODO: add documentation for: database configuration/function, functions and the lock
 
 class DatabaseHandler:
-    # TODO: make sure that this works as intended
-    database_lock = Lock()
+    def __init__(self):
+        self.database_lock = Lock()
+        self.connection = self._setup_ram_sqlite_db()
 
-
-class NotPresentInDatabase(Exception):
-    pass
-
-
-def setup_ram_sqlite_db() -> sqlite3.Connection:
-    """
-    Creates an sqlite3 database in RAM with the specifications of the database in the database_handler module.
-    :return: the connection to the created database
-    """
-    # create an sqlite database in ram
-    connection = sqlite3.connect(":memory:")
-    # create a cursor to the database
-    cursor = connection.cursor()
-    with DatabaseHandler.database_lock:
-        # create a new chat message amount table with chat_identifier as primary key
-        cursor.execute(
-            """CREATE TABLE chat_message_amount
-            (chat_identifier VARCHAR PRIMARY KEY NOT NULL,
-            total_message_amount INTEGER)""")
-        # create a new message table with message_identifier as primary key
-        cursor.execute(
-            """CREATE TABLE chat_messages
-            (message_identifier VARCHAR PRIMARY KEY NOT NULL ,
-            message VARCHAR,
-            sender VARCHAR)""")
-        connection.commit()
-    return connection
-
-
-def _insert_new_row_in_chat_messages_tbl(connection: sqlite3.Connection,
-                                         message_identifier: str,
-                                         message: str,
-                                         sender: str) -> None:
-    """
-    Inserts a new row in the chat_messages table.
-    
-    :param connection: connection to the sqlite3 database
-    :param message_identifier: the message identifier in the database
-    :param message: message that should be added to the database
-    :param sender: sender of the message
-    :return: None
-    """
-    cursor = connection.cursor()
-    with DatabaseHandler.database_lock:
-        cursor.execute(
-            "INSERT INTO chat_messages values (?, ?, ?)",
-            (message_identifier, message, sender))
-        connection.commit()
-
-
-def _request_specific_chat_message(connection: sqlite3.Connection,
-                                   first_user: str,
-                                   second_user: str,
-                                   total_messages: int) -> Tuple[str, str, str]:
-    """
-    Queries the database for a specific chat message.
-    
-    :raises NotPresentInDatabase: Raised when the specified message does not
-                                  exist in the database.
-    :param connection: connection to the database
-    :param first_user: user name of first user
-    :param second_user: user name of second user
-    :param total_messages: the number of the requested message
-    :return: a tuple of the row containing the specific chat message
-    """
-    chat_id = _create_chat_identifier(first_user, second_user)
-    msg_id = _create_message_identifier(chat_id, total_messages)
-    cursor = connection.cursor()
-    row = None
-    with DatabaseHandler.database_lock:
-        cursor.execute(
-            """
-            SELECT
-                message_identifier,
-                message,
-                sender
-            FROM
-                chat_messages
-            WHERE
-                message_identifier =(?)
-            """,
-            (msg_id,))
-        row = cursor.fetchone()
-    if row is None:
-        raise NotPresentInDatabase
-    return row
-
-
-def _query_total_message_amount(connection: sqlite3.Connection,
-                                chat_identifier: str) -> int:
-    """
-    Queries the database how many messages are saved to the chat_identifiers chat.
-    
-    If the chat_identifier is not found in the database the return value will be 0.
-    :param connection: connection to the database
-    :param chat_identifier: the chats identifier
-    :return: the number of messages that are in the chat
-    """
-    total_message_amount = 0
-    with DatabaseHandler.database_lock:
+    def _setup_ram_sqlite_db(self) -> sqlite3.Connection:
+        """
+        Creates an sqlite3 database in RAM with the specifications of the database in the database_handler module.
+        :return: the connection to the created database
+        """
+        # create an sqlite database in ram
+        connection = sqlite3.connect(":memory:")
+        # create a cursor to the database
         cursor = connection.cursor()
-        cursor.execute(
-            """
-            SELECT
-                total_message_amount
-            FROM
-                chat_message_amount
-            WHERE
-                chat_identifier =(?)
-            """, (chat_identifier,))
-        stored_amount = cursor.fetchone()
-        # if the query returns None then the value was not found in the column
-        if stored_amount is not None:
-            total_message_amount = stored_amount[0]  # returns a 1-tuple
-    return total_message_amount
-    
+        with self.database_lock:
+            # create a new chat message amount table with chat_identifier as primary key
+            cursor.execute(
+                """CREATE TABLE chat_message_amount
+                (chat_identifier VARCHAR PRIMARY KEY NOT NULL,
+                total_message_amount INTEGER)""")
+            # create a new message table with message_identifier as primary key
+            cursor.execute(
+                """CREATE TABLE chat_messages
+                (message_identifier VARCHAR PRIMARY KEY NOT NULL ,
+                message VARCHAR,
+                sender VARCHAR)""")
+            connection.commit()
+        return connection
 
-def _increment_total_message_amount(connection: sqlite3.Connection,
-                                    chat_identifier: str) -> None:
-    """
-    Increments the total message amount in the database for the chat with the chat identifier.
-    :param connection: the connection to the database
-    :param chat_identifier: the chat identifier
-    :return: None
-    """
-    sql_cmd = """
-            INSERT
-                INTO chat_message_amount
-                    (chat_identifier, total_message_amount)
-                VALUES
-                    ((?), 1)
-            ON CONFLICT
-                (chat_identifier)
-            DO UPDATE SET
-                total_message_amount=total_message_amount+1
-    """
+    def _insert_new_row_in_chat_messages_tbl(self,
+                                             message_identifier: str,
+                                             message: str,
+                                             sender: str) -> None:
+        """
+        Inserts a new row in the chat_messages table.
+        
+        :param message_identifier: the message identifier in the database
+        :param message: message that should be added to the database
+        :param sender: sender of the message
+        :return: None
+        """
+        cursor = self.connection.cursor()
+        with self.database_lock:
+            cursor.execute(
+                "INSERT INTO chat_messages values (?, ?, ?)",
+                (message_identifier, message, sender))
+            self.connection.commit()
+
+    def _request_specific_chat_message(self,
+                                       first_user: str,
+                                       second_user: str,
+                                       total_messages: int
+                                       ) -> Tuple[str, str, str]:
+        """
+        Queries the database for a specific chat message.
+        
+        :raises NotPresentInDatabase: Raised when the specified message does not
+                                      exist in the database.
+        :param first_user: user name of first user
+        :param second_user: user name of second user
+        :param total_messages: the number of the requested message
+        :return: a tuple of the row containing the specific chat message
+        """
+        chat_id = _create_chat_identifier(first_user, second_user)
+        msg_id = _create_message_identifier(chat_id, total_messages)
+        cursor = self.connection.cursor()
+        row = None
+        with self.database_lock:
+            cursor.execute(
+                """
+                SELECT
+                    message_identifier,
+                    message,
+                    sender
+                FROM
+                    chat_messages
+                WHERE
+                    message_identifier =(?)
+                """,
+                (msg_id,))
+            row = cursor.fetchone()
+        if row is None:
+            raise NotPresentInDatabase
+        return row
+
+    def _query_total_message_amount(self, chat_identifier: str) -> int:
+        """
+        Queries the database how many messages are saved to the chat_identifiers chat.
+        
+        If the chat_identifier is not found in the database the return value will be 0.
+        :param chat_identifier: the chats identifier
+        :return: the number of messages that are in the chat
+        """
+        total_message_amount = 0
+        with self.database_lock:
+            cursor = self.connection.cursor()
+            cursor.execute(
+                """
+                SELECT
+                    total_message_amount
+                FROM
+                    chat_message_amount
+                WHERE
+                    chat_identifier =(?)
+                """, (chat_identifier,))
+            stored_amount = cursor.fetchone()
+            # if the query returns None then the value was not found in the column
+            if stored_amount is not None:
+                total_message_amount = stored_amount[0]  # returns a 1-tuple
+        return total_message_amount
     
-    cursor = connection.cursor()
-    with DatabaseHandler.database_lock:
-        cursor.execute(sql_cmd, (chat_identifier,))
+    def _increment_total_message_amount(self, chat_identifier: str) -> None:
+        """
+        Increments the total message amount in the database for the chat with the chat identifier.
+        :param chat_identifier: the chat identifier
+        :return: None
+        """
+        sql_cmd = """
+                INSERT
+                    INTO chat_message_amount
+                        (chat_identifier, total_message_amount)
+                    VALUES
+                        ((?), 1)
+                ON CONFLICT
+                    (chat_identifier)
+                DO UPDATE SET
+                    total_message_amount=total_message_amount+1
+        """
+        cursor = self.connection.cursor()
+        with self.database_lock:
+            cursor.execute(sql_cmd, (chat_identifier,))
+
+    def add_chat_message_to_database(self, message: Message) -> None:
+        """
+        Stores a chat message in the database.
+        
+        :param message: the message that should be saved
+        :return: None
+        """
+        msg = message.content
+        sender = message.sender
+        receiver = message.receiver
+        
+        chat_id = _create_chat_identifier(sender, receiver)
+        # + 1 so that messages identifier match the queries
+        msg_number = self._query_total_message_amount(chat_id) + 1
+        msg_id = _create_message_identifier(chat_id, msg_number)
+        self._insert_new_row_in_chat_messages_tbl(msg_id, msg, sender)
+        self._increment_total_message_amount(chat_id)
 
 
 def _create_chat_identifier(first_user: str, second_user: str) -> str:
@@ -227,26 +230,6 @@ def _create_chat_identifier(first_user: str, second_user: str) -> str:
     return combined
 
 
-def add_chat_message_to_database(connection: sqlite3.Connection,
-                                 message: Message) -> None:
-    """
-    Stores a chat message in the database.
-    
-    :param connection: the connection to the database
-    :param message: the message that should be saved
-    :return: None
-    """
-    msg = message.content
-    sender = message.sender
-    receiver = message.receiver
-    
-    chat_id = _create_chat_identifier(sender, receiver)
-    msg_number = _query_total_message_amount(connection, chat_id)
-    msg_id = _create_message_identifier(chat_id, msg_number)
-    _insert_new_row_in_chat_messages_tbl(connection, msg_id, msg, sender)
-    _increment_total_message_amount(connection, chat_id)
-
-
 def _create_message_identifier(chat_identifier: str,
                                message_number: int) -> str:
     """
@@ -258,3 +241,7 @@ def _create_message_identifier(chat_identifier: str,
     """
     msg_id = "{}:{}".format(chat_identifier, message_number)
     return msg_id
+
+
+class NotPresentInDatabase(Exception):
+    pass
