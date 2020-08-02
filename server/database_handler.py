@@ -59,7 +59,7 @@ Table 2
 import sqlite3
 from typing import Tuple
 from threading import Lock
-from server.message import Message
+from chat_helper_lib.message import Message
 
 #TODO: add documentation for: database configuration/function, functions and the lock
 

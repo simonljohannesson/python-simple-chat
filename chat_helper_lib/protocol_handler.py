@@ -24,7 +24,7 @@ Specification of a serialized message.
         * Shall contain key "content", string containing the message content.
         * Is of variable length.
 """
-from server.message import Message
+from chat_helper_lib.message import Message
 from typing import Dict
 import json
 import sys

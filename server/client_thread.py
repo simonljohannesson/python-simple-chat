@@ -3,8 +3,9 @@
 
 import threading
 import socket
-from server.message import *
-from server import protocol_handler
+from chat_helper_lib.message import *
+from chat_helper_lib import protocol_handler
+
 
 # TODO: rename this class
 class ClientThread(threading.Thread):
