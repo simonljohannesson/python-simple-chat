@@ -1,4 +1,4 @@
-#client_thread.py
+#client_message_handler.py
 
 
 import threading
@@ -8,7 +8,7 @@ from chat_helper_lib import protocol_handler
 
 
 # TODO: rename this class
-class ClientThread(threading.Thread):
+class ClientMessageHandlerThread(threading.Thread):
     """
     Class used to dispatch threads that handles client connections.
 
