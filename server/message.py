@@ -8,7 +8,7 @@ class Message:
     """
     A class that represents a message that is sent between a client and server.
     
-    Message specifications by message type:
+    Message specifications by message msg_type:
         TYPE_CHAT_MESSAGE
             * content:      non-empty string, the chat message
             * sender:       non-empty string
@@ -19,8 +19,8 @@ class Message:
             * receiver:     non-empty string
     
     Attributes
-        TYPE_CHAT_MESSAGE -- message type used when message is a chat message
-        TYPE_REQUEST_NEW_MESSAGES -- message type used when requesting new
+        TYPE_CHAT_MESSAGE -- message msg_type used when message is a chat message
+        TYPE_REQUEST_NEW_MESSAGES -- message msg_type used when requesting new
                                      messages that are available on server.
     
     """
@@ -36,18 +36,24 @@ class Message:
         
         :raises InvalidMessageFormatError: Exception is raised when the message
             has an incorrect format.
-        :param msg_type: type of message
+        :param msg_type: msg_type of message
         :param content: content of the message
         :param sender: name of sender
         :param receiver: name of receiver
         """
-        self.json_header = dict()
-        self.msg_content = dict()
+        
+        self.msg_type = str(msg_type)
+        self.content = content
+        self.sender = sender
+        self.receiver = receiver
         
         if msg_type is Message.TYPE_CHAT_MESSAGE and content == "":
             raise InvalidMessageFormatError("Chat message text is missing.")
-        # TODO: redesign Message class, these should be instance attributes instead
-        self.msg_content["type"] = str(msg_type)
-        self.msg_content["content"] = content
-        self.msg_content["sender"] = sender
-        self.msg_content["receiver"] = receiver
+
+    def __str__(self):
+        str_rep = '{{"msg_type": "{msg_type}", "content": "{content}", ' \
+                  '"sender": "{sender}", "receiver": "{receiver}"}}'
+        return str_rep.format(msg_type=self.msg_type,
+                              content=self.content,
+                              sender=self.sender,
+                              receiver=self.receiver)

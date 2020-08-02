@@ -20,7 +20,7 @@ class ClientThread(threading.Thread):
     
     def run(self):
         received_message = self._receive_client_message()
-        print(received_message.msg_content)
+        print(received_message)
         # if not received_message.check_message_structure_valid():
         #     return
         # self._act_on_message(received_message)
@@ -71,7 +71,7 @@ class ClientThread(threading.Thread):
                 buffer += data
             # TODO: message.deserialize_content throws exception
             msg_content = protocol_handler.deserialize_json_object(buffer[:msg_content_length])
-            # code will break here because Message now takes a msg type and message not a dict.
+            # code will break here because Message now takes a msg msg_type and message not a dict.
             # raise NotImplementedError
             message = protocol_handler.reassemble_message(msg_content)
             return message

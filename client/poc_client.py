@@ -22,6 +22,7 @@ def main():
         client_socket.sendall(send_bytes)
         print("Data sent: {} to {}:{}".format(
             send_bytes, server_address[0], server_address[1]))
+        print("Message: {}".format(message))
         
 
 if __name__ == "__main__":

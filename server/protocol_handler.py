@@ -20,7 +20,7 @@ Specification of a serialized message.
         * Is of variable length.
     3. Message content
         * JSON object
-        * Shall contain key "type": non-empty string denoting the message type value.
+        * Shall contain key "msg_type": non-empty string denoting the message msg_type value.
         * Shall contain key "content", string containing the message content.
         * Is of variable length.
 """
@@ -49,12 +49,19 @@ def serialize_message(message: Message) -> bytes:
     """
     encoding = "UTF-8"
     # message content
-    msg_content_serialized = json.dumps(message.msg_content).encode(encoding)
+    message_content = dict()
+    message_content["msg_type"] = message.msg_type
+    message_content["content"] = message.content
+    message_content["sender"] = message.sender
+    message_content["receiver"] = message.receiver
+    
+    msg_content_serialized = json.dumps(message_content).encode(encoding)
     # json header
-    message.json_header["byteorder"] = sys.byteorder
-    message.json_header["encoding"] = encoding
-    message.json_header["length"] = str(len(msg_content_serialized))
-    json_header_serialized = json.dumps(message.json_header).encode("UTF-8")
+    json_header = dict()
+    json_header["byteorder"] = sys.byteorder
+    json_header["encoding"] = encoding
+    json_header["length"] = str(len(msg_content_serialized))
+    json_header_serialized = json.dumps(json_header).encode("UTF-8")
     # fixed length header
     json_header_length = len(json_header_serialized)
     serialized_message = \
@@ -113,15 +120,16 @@ def reassemble_message(message_content: Dict[str, str]) -> Message:
     
     for key in message_content:
         if type(message_content[key]) is not str:
+            print(message_content[key], type(message_content[key]))
             raise ProtocolViolationError(error_msg_format)
         
-    msg_type = message_content["type"]
+    msg_type = message_content["msg_type"]
     content = message_content["content"]
     sender = message_content["sender"]
     receiver = message_content["receiver"]
     try:
         reassembled_msg = Message(
-            msg_type=int(msg_type),  # type should be an integer
+            msg_type=int(msg_type),  # msg_type should be an integer
             content=content,
             sender=sender,
             receiver=receiver)
