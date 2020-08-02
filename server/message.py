@@ -46,7 +46,7 @@ class Message:
         
         if msg_type is Message.TYPE_CHAT_MESSAGE and content == "":
             raise InvalidMessageFormatError("Chat message text is missing.")
-        
+        # TODO: redesign Message class, these should be instance attributes instead
         self.msg_content["type"] = str(msg_type)
         self.msg_content["content"] = content
         self.msg_content["sender"] = sender
