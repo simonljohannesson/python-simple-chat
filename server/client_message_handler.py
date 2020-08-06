@@ -6,7 +6,7 @@ import socket
 from chat_helper_lib.message import *
 from chat_helper_lib import protocol_handler
 from chat_helper_lib.protocol_handler import ProtocolViolationError
-from server.database_handler import DatabaseHandler,NotPresentInDatabase
+from server.database_handler import DatabaseHandler
 # test module
 # from server.test import dump_data_in_chat_messages_amount_table, dump_data_in_chat_messages_table
 
@@ -32,65 +32,45 @@ class ClientMessageHandlerThread(threading.Thread):
             self._determine_action(received_message)
             
         except ProtocolViolationError as error:
-            print("ClientMessageHandlerThread tried to receive a message but it"
+            print(error, ": ClientMessageHandlerThread tried to receive a message but it"
                   " was corrupt.")
         finally:
             self.client_socket.close()
         # test functions
         # dump_data_in_chat_messages_table(self.db_handler)
         # dump_data_in_chat_messages_amount_table(self.db_handler)
-        
+
     def _receive_client_message(self) -> Message:
-        """
-        :raises ProtocolViolationError: If the agreed protocol is not followed
-        the exception will be thrown.
-        :return:
-        """
+        try:
+            with self.client_socket as s:
+                # fetch fixed header
+                fixed_header_size = 2
+                buffer = self._receive_bytes(fixed_header_size, s)
+                header = buffer[:fixed_header_size]
+                msg_len = protocol_handler.deserialize_two_byte_header(header)
+                # fetch rest of message
+                buffer = buffer[fixed_header_size:]
+                buffer = self._receive_bytes(msg_len, s, buffer)
+                msg_content = protocol_handler.deserialize_json_object(buffer)
+                message = protocol_handler.reassemble_message(msg_content)
+                return message
+        except ProtocolViolationError as error:
+            # TODO: log
+            print(error)
+        finally:
+            self.client_socket.close()
+    
+    def _receive_bytes(self, qty_bytes: int, s: socket.socket, buffer=b''):
         error_msg = "Did not receive expected number of bytes."
-        buffer_length = 0
-        fix_header = 0
-        json_header = None
-        msg_content = None
-        buffer = b''
-        
-        with self.client_socket as s:
-            # get fixed header of message
-            while buffer_length < 2:
-                data = s.recv(2)
-                if not data:
-                    raise ProtocolViolationError(error_msg)
-                buffer_length += len(data)
-                buffer += data
-            fix_header = protocol_handler.deserialize_two_byte_header(buffer[:2])
-            buffer = buffer[2:]
+        buffer_length = len(buffer)
+        while buffer_length < qty_bytes:
+            data = s.recv(48)
+            if not data:
+                raise ProtocolViolationError(error_msg)
+            buffer += data
             buffer_length = len(buffer)
-            
-            # get variable header of message
-            json_header_length = fix_header
-            while buffer_length < json_header_length:
-                data = s.recv(32)
-                if not data:
-                    raise ProtocolViolationError(error_msg)
-                buffer_length += len(data)
-                buffer += data
-            json_header = protocol_handler.deserialize_json_object(buffer[:fix_header])
-            buffer = buffer[fix_header:]
-            buffer_length = len(buffer)
-            
-            # get message content
-            msg_content_length = int(json_header["length"])
-            while buffer_length < msg_content_length:
-                data = s.recv(32)
-                if not data:
-                    raise ProtocolViolationError(error_msg)
-                buffer_length += len(data)
-                buffer += data
-            msg_content = protocol_handler.deserialize_json_object(buffer[:msg_content_length])
-            message = protocol_handler.reassemble_message(msg_content)
-            return message
-            
-            
-        
+        return buffer
+    
     def _determine_action(self, message: Message):
         """
         Determines what action should be taken for a message.

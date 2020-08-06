@@ -56,18 +56,10 @@ def serialize_message(message: Message) -> bytes:
     message_content["receiver"] = message.receiver
     
     msg_content_serialized = json.dumps(message_content).encode(encoding)
-    # json header
-    json_header = dict()
-    json_header["byteorder"] = sys.byteorder
-    json_header["encoding"] = encoding
-    json_header["length"] = str(len(msg_content_serialized))
-    json_header_serialized = json.dumps(json_header).encode("UTF-8")
-    # fixed length header
-    json_header_length = len(json_header_serialized)
-    serialized_message = \
-        json_header_length.to_bytes(2, "big") \
-        + json_header_serialized \
-        + msg_content_serialized
+    msg_len = len(msg_content_serialized)
+    if msg_len > 2**16:  # max unsigned integer in 2 bytes
+        raise ProtocolViolationError("Message is too long.")
+    serialized_message = msg_len.to_bytes(2,"big") + msg_content_serialized
     return serialized_message
 
 
