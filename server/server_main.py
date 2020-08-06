@@ -18,11 +18,8 @@ def open_server_connection(address: Tuple[str, int],
             print("Connected to {}:{}".format(client_addr[0], client_addr[1]))
             client_thread = \
                 ClientMessageHandlerThread(client_socket, db_handler)
-            try:
-                client_thread.run()
-            except NotImplementedError as expected:
-                server_socket.close()
-                raise expected
+            client_thread.run()
+
 
 def main():
     # hostname = socket.gethostname()

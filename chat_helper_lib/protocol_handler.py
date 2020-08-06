@@ -95,7 +95,7 @@ def deserialize_json_object(json_object: bytes) -> Dict[str, str]:
     
     Is used to deserialize the variable length header or the message content.
     :param json_object: the JSON object that should be deserialized
-    :raises MessageCorruptError: if the object entered is incomplete or has an
+    :raises ProtocolViolationError: if the object entered is incomplete or has an
     invalid structure
     :return: a python dictionary corresponding to the JSON object
     """
@@ -103,7 +103,7 @@ def deserialize_json_object(json_object: bytes) -> Dict[str, str]:
         message_dictionary = json.loads(json_object)
         return message_dictionary
     except json.JSONDecodeError as exception:
-        raise MessageCorruptError
+        raise ProtocolViolationError("The JSON-object is not valid.")
 
 
 def reassemble_message(message_content: Dict[str, str]) -> Message:
