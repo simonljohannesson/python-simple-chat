@@ -126,18 +126,18 @@ def reassemble_message(message_content: Dict[str, str]) -> Message:
 
 
 def has_valid_sender_format(message: Message) -> bool:
-    if len(message.sender) == 0 or type(message.sender) is not str:
+    if type(message.sender) is not str or len(message.sender) == 0:
         return False
     return True
 
 
 def has_valid_receiver_format(message: Message) -> bool:
-    if len(message.receiver) == 0 or type(message.receiver) is not str:
+    if type(message.receiver) is not str or len(message.receiver) == 0:
         return False
     return True
 
 
 def has_valid_content_format(message: Message) -> bool:
-    if len(message.content) == 0 or type(message.content) is not str:
+    if type(message.content) is not str or len(message.content) == 0:
         return False
     return True

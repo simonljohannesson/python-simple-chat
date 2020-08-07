@@ -8,7 +8,7 @@ from chat_helper_lib import protocol_handler
 from chat_helper_lib.protocol_handler import ProtocolViolationError
 from server.database_handler import DatabaseHandler
 # test module
-# from server.test import dump_data_in_chat_messages_amount_table, dump_data_in_chat_messages_table
+from server.test import dump_data_in_chat_messages_amount_table, dump_data_in_chat_messages_table
 
 
 class ClientMessageHandlerThread(threading.Thread):
@@ -37,8 +37,8 @@ class ClientMessageHandlerThread(threading.Thread):
         finally:
             self.client_socket.close()
         # test functions
-        # dump_data_in_chat_messages_table(self.db_handler)
-        # dump_data_in_chat_messages_amount_table(self.db_handler)
+        dump_data_in_chat_messages_table(self.db_handler)
+        dump_data_in_chat_messages_amount_table(self.db_handler)
 
     def _receive_client_message(self) -> Message:
         try:
