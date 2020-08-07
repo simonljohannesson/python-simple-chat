@@ -3,7 +3,7 @@
 
 import socket
 from typing import Tuple
-from server.client_message_handler import ClientMessageHandlerThread
+from server.server_message_handler import ServerMessageHandlerThread
 from server.database_handler import DatabaseHandler
 
 
@@ -17,7 +17,7 @@ def open_server_connection(address: Tuple[str, int],
             client_socket, client_addr = server_socket.accept()
             print("Connected to {}:{}".format(client_addr[0], client_addr[1]))
             client_thread = \
-                ClientMessageHandlerThread(client_socket, db_handler)
+                ServerMessageHandlerThread(client_socket, db_handler)
             client_thread.run()
 
 
