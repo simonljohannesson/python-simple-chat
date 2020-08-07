@@ -9,7 +9,7 @@ from chat_helper_lib import protocol_handler
 def main():
     # server_hostname = "computer"
     server_hostname = "127.0.0.1"
-    server_port_no = 7896
+    server_port_no = 7897
     server_address = (server_hostname, server_port_no)
     # for i in range(1000):
     

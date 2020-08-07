@@ -4,9 +4,6 @@ import socket
 from chat_helper_lib.message import *
 from chat_helper_lib import protocol_handler
 from chat_helper_lib.protocol_handler import ProtocolViolationError
-from server.database_handler import DatabaseHandler
-# test module
-from server.test import dump_data_in_chat_messages_amount_table, dump_data_in_chat_messages_table
 
 
 class MessageHandlerThread(threading.Thread):
@@ -16,10 +13,9 @@ class MessageHandlerThread(threading.Thread):
     Attributes:
         s (socket): The socket that a message should be received from.
     """
-    def __init__(self, s: socket.socket, db_handler: DatabaseHandler):
+    def __init__(self, s: socket.socket):
         threading.Thread.__init__(self)
         self.current_socket = s
-        self.db_handler = db_handler
     
     def run(self):
         try:
@@ -32,9 +28,6 @@ class MessageHandlerThread(threading.Thread):
                          " was corrupt.")
         finally:
             self.current_socket.close()
-        # test functions
-        dump_data_in_chat_messages_table(self.db_handler)
-        dump_data_in_chat_messages_amount_table(self.db_handler)
     
     def _receive_client_message(self) -> Message:
         try:
