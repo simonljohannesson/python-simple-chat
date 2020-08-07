@@ -68,29 +68,6 @@ class DatabaseHandler:
         self.database_lock = Lock()
         self.connection = self._setup_ram_sqlite_db()
 
-    def _setup_ram_sqlite_db(self) -> sqlite3.Connection:
-        """
-        Creates an sqlite3 database in RAM with the specifications of the database in the database_handler module.
-        :return: the connection to the created database
-        """
-        # create an sqlite database in ram
-        connection = sqlite3.connect(":memory:")
-        # create a cursor to the database
-        cursor = connection.cursor()
-        with self.database_lock:
-            # create a new chat message amount table with chat_identifier as primary key
-            cursor.execute(
-                """CREATE TABLE chat_message_amount
-                (chat_identifier VARCHAR PRIMARY KEY NOT NULL,
-                total_message_amount INTEGER)""")
-            # create a new message table with message_identifier as primary key
-            cursor.execute(
-                """CREATE TABLE chat_messages
-                (message_identifier VARCHAR PRIMARY KEY NOT NULL ,
-                message VARCHAR,
-                sender VARCHAR)""")
-            connection.commit()
-        return connection
 
     def _insert_new_row_in_chat_messages_tbl(self,
                                              message_identifier: str,
@@ -220,6 +197,37 @@ class DatabaseHandler:
         msg_id = _create_message_identifier(chat_id, msg_number)
         self._insert_new_row_in_chat_messages_tbl(msg_id, msg, sender)
         self._increment_total_message_amount(chat_id)
+
+    def _setup_chat_message_amount_table(self, cursor: sqlite3.Cursor) -> None:
+        """
+        Create a new chat message amount table with chat_identifier as primary key
+        
+        Does not commit the change to the database.
+        Is not thread safe.
+        :param cursor: cursor from the connection of sqlite3 database
+        :return: None
+        """
+        cursor.execute(
+            """CREATE TABLE chat_message_amount
+            (chat_identifier VARCHAR PRIMARY KEY NOT NULL,
+            total_message_amount INTEGER)""")
+        return
+    
+    def _setup_chat_messages_table(self, cursor: sqlite3.Cursor) -> None:
+        """
+        Create a new message table with message_identifier as primary key
+        
+        Does not commit the change to the database.
+        Is not thread safe.
+        :param cursor: cursor from the connection of sqlite3 database
+        :return: None
+        """
+        cursor.execute(
+            """CREATE TABLE chat_messages
+            (message_identifier VARCHAR PRIMARY KEY NOT NULL ,
+            message VARCHAR,
+            sender VARCHAR)""")
+        return
 
 
 def _create_chat_identifier(first_user: str, second_user: str) -> str:

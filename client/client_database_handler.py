@@ -4,15 +4,16 @@ from chat_helper_lib.database_handler import DatabaseHandler
 import sqlite3
 
 
-class ServerDatabaseHandler(DatabaseHandler):
+class ClientDatabaseHandler(DatabaseHandler):
     def __init__(self):
         super().__init__()
         self.database_lock = Lock()
         self.connection = self._setup_ram_sqlite_db()
-
+    
     def _setup_ram_sqlite_db(self) -> sqlite3.Connection:
         """
         Creates an sqlite3 database in RAM with the specifications of the database in the database_handler module.
+        
         :return: the connection to the created database
         """
         # create an sqlite database in ram
