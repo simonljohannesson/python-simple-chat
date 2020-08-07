@@ -60,6 +60,7 @@ import sqlite3
 from typing import Tuple
 from threading import Lock
 from chat_helper_lib.message import Message
+from chat_helper_lib import protocol_handler
 
 
 class DatabaseHandler:
@@ -201,6 +202,14 @@ class DatabaseHandler:
         :param message: the message that should be saved
         :return: None
         """
+        if not protocol_handler.has_valid_content_format(message) or \
+                not protocol_handler.has_valid_receiver_format(message) or\
+                not protocol_handler.has_valid_sender_format(message):
+            # TODO: log error
+            print("Message not added to database, incorrect format, message:",
+                  message)
+            return
+        
         msg = message.content
         sender = message.sender
         receiver = message.receiver

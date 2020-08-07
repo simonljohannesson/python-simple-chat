@@ -78,7 +78,6 @@ class ClientMessageHandlerThread(threading.Thread):
         :param message:
         :return:
         """
-        # TODO: validate message type with message structure before doing anything
         if message.msg_type == Message.TYPE_CHAT_MESSAGE:
             self.db_handler.add_chat_message_to_database(message)
         elif message.msg_type == Message.TYPE_REQUEST_NEW_MESSAGES:
