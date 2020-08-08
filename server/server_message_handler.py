@@ -8,7 +8,7 @@ from server.server_database_handler import ServerDatabaseHandler
 
 
 # test module
-# from server.test import dump_data_in_chat_messages_amount_table, dump_data_in_chat_messages_table
+from server.test import dump_data_in_chat_messages_amount_table, dump_data_in_chat_messages_table
 
 
 class ServerMessageHandlerThread(message_handler.MessageHandlerThread):
@@ -33,5 +33,5 @@ class ServerMessageHandlerThread(message_handler.MessageHandlerThread):
                 "Message type with value {} is not implemented".format(
                     message.msg_type))
         
-        # dump_data_in_chat_messages_table(self.db_handler)
-        # dump_data_in_chat_messages_amount_table(self.db_handler)
+        dump_data_in_chat_messages_table(self.db_handler)
+        dump_data_in_chat_messages_amount_table(self.db_handler)

@@ -26,6 +26,7 @@ class Message:
     """
     TYPE_CHAT_MESSAGE = 0
     TYPE_REQUEST_NEW_MESSAGES = 1
+    TYPE_NEW_MESSAGES = 2
     
     def __init__(self, msg_type: int,
                  content="",

@@ -29,6 +29,8 @@ from typing import Dict
 import json
 import sys
 
+MESSAGE_LENGTH_WITHOUT_CONTENT = len('{"msg_type": 1, "content": "", "sender": "", "receiver": ""}')
+
 
 class ProtocolViolationError(Exception):
     def __init__(self, msg: str):
@@ -48,6 +50,15 @@ def serialize_message(message: Message) -> bytes:
     :return: the serialized message
     """
     encoding = "UTF-8"
+    msg_content_serialized = serialize_message_content(message).encode(encoding)
+    msg_len = len(msg_content_serialized)
+    if msg_len > 2**16:  # max unsigned integer in 2 bytes
+        raise ProtocolViolationError("Message is too long.")
+    serialized_message = msg_len.to_bytes(2,"big") + msg_content_serialized
+    return serialized_message
+
+
+def serialize_message_content(message) -> str:
     # message content
     message_content = dict()
     message_content["msg_type"] = message.msg_type
@@ -55,12 +66,8 @@ def serialize_message(message: Message) -> bytes:
     message_content["sender"] = message.sender
     message_content["receiver"] = message.receiver
     
-    msg_content_serialized = json.dumps(message_content).encode(encoding)
-    msg_len = len(msg_content_serialized)
-    if msg_len > 2**16:  # max unsigned integer in 2 bytes
-        raise ProtocolViolationError("Message is too long.")
-    serialized_message = msg_len.to_bytes(2,"big") + msg_content_serialized
-    return serialized_message
+    msg_content_serialized = json.dumps(message_content)
+    return msg_content_serialized
 
 
 def deserialize_two_byte_header(serialized_fixed_header: bytes) -> int:
@@ -94,7 +101,7 @@ def deserialize_json_object(json_object: bytes) -> Dict[str, str]:
     try:
         message_dictionary = json.loads(json_object)
         return message_dictionary
-    except json.JSONDecodeError as exception:
+    except json.JSONDecodeError:
         raise ProtocolViolationError("The JSON-object is not valid.")
 
 
@@ -141,3 +148,15 @@ def has_valid_content_format(message: Message) -> bool:
     if type(message.content) is not str or len(message.content) == 0:
         return False
     return True
+
+
+def validate_request_message_format(message: Message) -> None:
+    if not message.msg_type == Message.TYPE_REQUEST_NEW_MESSAGES or \
+            not message.content.isdigit() or \
+            not has_valid_content_format(message) or \
+            not has_valid_sender_format(message) or \
+            not has_valid_receiver_format(message):
+        raise MessageCorruptError(
+            "Message does not conform to TYPE_REQUEST_NEW_MESSAGES format,"
+            " message:", message)
+

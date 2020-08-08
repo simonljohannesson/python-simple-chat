@@ -61,13 +61,13 @@ from typing import Tuple
 from threading import Lock
 from chat_helper_lib.message import Message
 from chat_helper_lib import protocol_handler
+import re
 
 
 class DatabaseHandler:
     def __init__(self):
         self.database_lock = Lock()
         self.connection = self._setup_ram_sqlite_db()
-
 
     def _insert_new_row_in_chat_messages_tbl(self,
                                              message_identifier: str,
@@ -89,22 +89,16 @@ class DatabaseHandler:
             self.connection.commit()
 
     def _request_specific_chat_message(self,
-                                       first_user: str,
-                                       second_user: str,
-                                       total_messages: int
+                                       message_identifier: str
                                        ) -> Tuple[str, str, str]:
         """
         Queries the database for a specific chat message.
         
         :raises NotPresentInDatabase: Raised when the specified message does not
                                       exist in the database.
-        :param first_user: user name of first user
-        :param second_user: user name of second user
-        :param total_messages: the number of the requested message
+        :param message_identifier: the message identifier
         :return: a tuple of the row containing the specific chat message
         """
-        chat_id = _create_chat_identifier(first_user, second_user)
-        msg_id = _create_message_identifier(chat_id, total_messages)
         cursor = self.connection.cursor()
         row = None
         with self.database_lock:
@@ -119,11 +113,12 @@ class DatabaseHandler:
                 WHERE
                     message_identifier =(?)
                 """,
-                (msg_id,))
+                (message_identifier,))
             row = cursor.fetchone()
         if row is None:
             raise NotPresentInDatabase
         return row
+
 
     def _query_total_message_amount(self, chat_identifier: str) -> int:
         """
@@ -191,10 +186,10 @@ class DatabaseHandler:
         sender = message.sender
         receiver = message.receiver
         
-        chat_id = _create_chat_identifier(sender, receiver)
+        chat_id = create_chat_identifier(sender, receiver)
         # + 1 so that messages identifier match the queries
         msg_number = self._query_total_message_amount(chat_id) + 1
-        msg_id = _create_message_identifier(chat_id, msg_number)
+        msg_id = create_message_identifier(chat_id, msg_number)
         self._insert_new_row_in_chat_messages_tbl(msg_id, msg, sender)
         self._increment_total_message_amount(chat_id)
 
@@ -230,7 +225,7 @@ class DatabaseHandler:
         return
 
 
-def _create_chat_identifier(first_user: str, second_user: str) -> str:
+def create_chat_identifier(first_user: str, second_user: str) -> str:
     """
     Creates chat identifier by sorting the users according to the value of the string and concatenating.
     
@@ -247,8 +242,8 @@ def _create_chat_identifier(first_user: str, second_user: str) -> str:
     return combined
 
 
-def _create_message_identifier(chat_identifier: str,
-                               message_number: int) -> str:
+def create_message_identifier(chat_identifier: str,
+                              message_number: int) -> str:
     """
     Creates a message identifier.
     
@@ -258,6 +253,24 @@ def _create_message_identifier(chat_identifier: str,
     """
     msg_id = "{}:{}".format(chat_identifier, message_number)
     return msg_id
+
+
+def convert_chat_msgs_table_row_to_msg(row: Tuple[str, str, str]
+                                        ) -> Message:
+    message_identifier = row[0]
+    content = row[1]
+    sender = row[2]
+    first_user, second_user = message_identifier.split(":")[:2]
+    if first_user != sender:
+        receiver = first_user
+    else:
+        receiver = second_user
+    
+    message = Message(Message.TYPE_CHAT_MESSAGE,
+                      content,
+                      sender,
+                      receiver)
+    return message
 
 
 class NotPresentInDatabase(Exception):

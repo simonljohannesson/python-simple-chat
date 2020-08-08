@@ -26,12 +26,11 @@ class MessageHandlerThread(threading.Thread):
         except ProtocolViolationError as error:
             print(error, ": MessageHandlerThread tried to receive a message but it"
                          " was corrupt.")
-        finally:
-            self.current_socket.close()
+
     
     def _receive_client_message(self) -> Message:
         try:
-            with self.current_socket as s:
+            with self.current_socket as s:  # closes the socket when done TODO: rearrange code to allow receiving answers
                 # fetch fixed header
                 fixed_header_size = 2
                 buffer = self._receive_bytes(fixed_header_size, s)
@@ -42,18 +41,21 @@ class MessageHandlerThread(threading.Thread):
                 buffer = self._receive_bytes(msg_len, s, buffer)
                 msg_content = protocol_handler.deserialize_json_object(buffer)
                 message = protocol_handler.reassemble_message(msg_content)
+                print("answering")
+                self.current_socket.sendall(b'answer back !!!!')
                 return message
         except ProtocolViolationError as error:
             # TODO: log
             print(error)
-        finally:
+            print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
             self.current_socket.close()
+ 
     
     def _receive_bytes(self, qty_bytes: int, s: socket.socket, buffer=b''):
         error_msg = "Did not receive expected number of bytes."
         buffer_length = len(buffer)
         while buffer_length < qty_bytes:
-            data = s.recv(48)
+            data = s.recv(4096)
             if not data:
                 raise ProtocolViolationError(error_msg)
             buffer += data
