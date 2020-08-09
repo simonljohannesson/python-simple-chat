@@ -21,40 +21,42 @@ class MessageHandlerThread(threading.Thread):
         try:
             with self.current_socket:
                 received_message = self._receive_client_message()
-                print(received_message)
                 self._determine_action(received_message)
         
         except ProtocolViolationError as error:
-            print(error, ": MessageHandlerThread tried to receive a message but it"
-                         " was corrupt.")
+            print("Dropped a message due to violation of protocol.")
 
-    
     def _receive_client_message(self) -> Message:
-        try:
-            # fetch fixed header
-            fixed_header_size = 2
-            buffer = self._receive_bytes(fixed_header_size, self.current_socket)
-            header = buffer[:fixed_header_size]
-            msg_len = protocol_handler.deserialize_two_byte_header(header)
-            # fetch rest of message
-            buffer = buffer[fixed_header_size:]
-            buffer = self._receive_bytes(msg_len, self.current_socket, buffer)
-            msg_content = protocol_handler.deserialize_json_object(buffer)
-            message = protocol_handler.reassemble_message(msg_content)
-            return message
-        except ProtocolViolationError as error:
-            # TODO: log
-            print(error)
-            self.current_socket.close()
+        # fetch fixed header
+        fixed_header_size = 2
+        buffer = self._receive_bytes(fixed_header_size, self.current_socket)
+        if len(buffer) < 2:
+            raise ProtocolViolationError("Message received not correct length.")
+        
+        header = buffer[:fixed_header_size]
+        msg_len = protocol_handler.deserialize_two_byte_header(header)
+        # fetch rest of message
+        buffer = buffer[fixed_header_size:]
+        buffer = self._receive_bytes(msg_len, self.current_socket, buffer)
+        if len(buffer) < msg_len:
+            raise ProtocolViolationError("Message received not correct length.")
+        
+        msg_content = protocol_handler.deserialize_json_object(buffer)
+        message = protocol_handler.reassemble_message(msg_content)
+        return message
+        # except ProtocolViolationError as error:
+        #     TODO: log
+            # print(error)
+            # self.current_socket.close()
  
     
     def _receive_bytes(self, qty_bytes: int, s: socket.socket, buffer=b''):
-        error_msg = "Did not receive expected number of bytes."
+        error_msg = "Did not receive expected number of bytes. (message handler)"
         buffer_length = len(buffer)
         while buffer_length < qty_bytes:
             data = s.recv(4096)
             if not data:
-                raise ProtocolViolationError(error_msg)
+                break
             buffer += data
             buffer_length = len(buffer)
         return buffer

@@ -4,6 +4,8 @@ import chat_helper_lib.database_handler as database_handler
 import sqlite3
 from chat_helper_lib.message import Message
 from chat_helper_lib import protocol_handler
+import json
+
 
 
 class ServerDatabaseHandler(DatabaseHandler):
@@ -35,7 +37,7 @@ class ServerDatabaseHandler(DatabaseHandler):
         chat_identifier = database_handler.create_chat_identifier(
             message.sender,
             message.receiver)
-        messages_available_in_db = self._query_total_message_amount(
+        messages_available_in_db = self.query_total_message_amount(
             chat_identifier)
         
         message_list = []
@@ -52,8 +54,10 @@ class ServerDatabaseHandler(DatabaseHandler):
             msg_serialized = protocol_handler.serialize_message_content(msg)
             message_list.append(msg_serialized)
             
+        ser_msg_list = json.dumps(message_list)
+        print("serialized message:", type(ser_msg_list))
         return_message = Message(Message.TYPE_NEW_MESSAGES,
-                                 message_list)
+                                 ser_msg_list)
         return return_message
 
 # if __name__ == '__main__':

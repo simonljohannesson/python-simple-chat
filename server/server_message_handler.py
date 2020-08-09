@@ -24,12 +24,14 @@ class ServerMessageHandlerThread(message_handler.MessageHandlerThread):
         :param message:
         :return:
         """
+        print("Determine action for: {}".format(str(message)))
         if message.msg_type == Message.TYPE_CHAT_MESSAGE:
             self.db_handler.add_chat_message_to_database(message)
             
         elif message.msg_type == Message.TYPE_REQUEST_NEW_MESSAGES:
             new_msgs = self.db_handler.get_new_messages(message)
             serialized_new_msgs = protocol_handler.serialize_message(new_msgs)
+            print(serialized_new_msgs)
             self.current_socket.sendall(serialized_new_msgs)
         else:
             raise NotImplementedError(

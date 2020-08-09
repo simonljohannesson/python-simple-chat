@@ -120,7 +120,7 @@ class DatabaseHandler:
         return row
 
 
-    def _query_total_message_amount(self, chat_identifier: str) -> int:
+    def query_total_message_amount(self, chat_identifier: str) -> int:
         """
         Queries the database how many messages are saved to the chat_identifiers chat.
         
@@ -188,7 +188,7 @@ class DatabaseHandler:
         
         chat_id = create_chat_identifier(sender, receiver)
         # + 1 so that messages identifier match the queries
-        msg_number = self._query_total_message_amount(chat_id) + 1
+        msg_number = self.query_total_message_amount(chat_id) + 1
         msg_id = create_message_identifier(chat_id, msg_number)
         self._insert_new_row_in_chat_messages_tbl(msg_id, msg, sender)
         self._increment_total_message_amount(chat_id)

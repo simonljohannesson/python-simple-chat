@@ -124,9 +124,9 @@ def reassemble_message(message_content: Dict[str, str]) -> Message:
         receiver = message_content["receiver"]
         reassembled_msg = Message(
                 msg_type=int(msg_type),  # msg_type should be an integer
-                content=content,
-                sender=sender,
-                receiver=receiver)
+                content=str(content),
+                sender=str(sender),
+                receiver=str(receiver))
         return reassembled_msg
     except (KeyError, TypeError) as exception:
         raise ProtocolViolationError(error_msg_format)
@@ -157,6 +157,6 @@ def validate_request_message_format(message: Message) -> None:
             not has_valid_sender_format(message) or \
             not has_valid_receiver_format(message):
         raise MessageCorruptError(
-            "Message does not conform to TYPE_REQUEST_NEW_MESSAGES format,"
-            " message:", message)
+            "Message does not conform to TYPE_REQUEST_NEW_MESSAGES format," +
+            " message:" + str(message))
 

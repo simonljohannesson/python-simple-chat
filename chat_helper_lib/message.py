@@ -44,9 +44,9 @@ class Message:
         """
         
         self.msg_type = msg_type
-        self.content = content
-        self.sender = sender
-        self.receiver = receiver
+        self.content = str(content)
+        self.sender = str(sender)
+        self.receiver = str(receiver)
         
         if msg_type is Message.TYPE_CHAT_MESSAGE and content == "":
             raise InvalidMessageFormatError("Chat message text is missing.")
