@@ -19,9 +19,10 @@ class MessageHandlerThread(threading.Thread):
     
     def run(self):
         try:
-            received_message = self._receive_client_message()
-            print(received_message)
-            self._determine_action(received_message)
+            with self.current_socket:
+                received_message = self._receive_client_message()
+                print(received_message)
+                self._determine_action(received_message)
         
         except ProtocolViolationError as error:
             print(error, ": MessageHandlerThread tried to receive a message but it"
@@ -30,24 +31,20 @@ class MessageHandlerThread(threading.Thread):
     
     def _receive_client_message(self) -> Message:
         try:
-            with self.current_socket as s:  # closes the socket when done TODO: rearrange code to allow receiving answers
-                # fetch fixed header
-                fixed_header_size = 2
-                buffer = self._receive_bytes(fixed_header_size, s)
-                header = buffer[:fixed_header_size]
-                msg_len = protocol_handler.deserialize_two_byte_header(header)
-                # fetch rest of message
-                buffer = buffer[fixed_header_size:]
-                buffer = self._receive_bytes(msg_len, s, buffer)
-                msg_content = protocol_handler.deserialize_json_object(buffer)
-                message = protocol_handler.reassemble_message(msg_content)
-                print("answering")
-                self.current_socket.sendall(b'answer back !!!!')
-                return message
+            # fetch fixed header
+            fixed_header_size = 2
+            buffer = self._receive_bytes(fixed_header_size, self.current_socket)
+            header = buffer[:fixed_header_size]
+            msg_len = protocol_handler.deserialize_two_byte_header(header)
+            # fetch rest of message
+            buffer = buffer[fixed_header_size:]
+            buffer = self._receive_bytes(msg_len, self.current_socket, buffer)
+            msg_content = protocol_handler.deserialize_json_object(buffer)
+            message = protocol_handler.reassemble_message(msg_content)
+            return message
         except ProtocolViolationError as error:
             # TODO: log
             print(error)
-            print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
             self.current_socket.close()
  
     

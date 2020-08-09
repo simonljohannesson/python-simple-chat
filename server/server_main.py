@@ -21,15 +21,11 @@ def open_server_connection(address: Tuple[str, int],
                 ServerMessageHandlerThread(client_socket, db_handler)
             client_thread.run()
             
-            req_msg = Message(Message.TYPE_REQUEST_NEW_MESSAGES,
-                              "0", "Thor", "Freya")
-            print("the messages -> {}".format(db_handler.get_new_messages(req_msg)))
-
 
 def main():
     # hostname = socket.gethostname()
     hostname = "127.0.0.1"
-    port_number = 7898
+    port_number = 7899
     address = (hostname, port_number)
     db_handler = ServerDatabaseHandler()
     open_server_connection(address, db_handler)

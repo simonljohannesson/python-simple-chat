@@ -2,9 +2,10 @@
 
 
 from chat_helper_lib.message import *
-from chat_helper_lib import message_handler
+from chat_helper_lib import message_handler, protocol_handler
 import socket
 from server.server_database_handler import ServerDatabaseHandler
+
 
 
 # test module
@@ -27,7 +28,9 @@ class ServerMessageHandlerThread(message_handler.MessageHandlerThread):
             self.db_handler.add_chat_message_to_database(message)
             
         elif message.msg_type == Message.TYPE_REQUEST_NEW_MESSAGES:
-            raise NotImplementedError("TYPE_REQUEST_NEW_MESSAGES not implemented")
+            new_msgs = self.db_handler.get_new_messages(message)
+            serialized_new_msgs = protocol_handler.serialize_message(new_msgs)
+            self.current_socket.sendall(serialized_new_msgs)
         else:
             raise NotImplementedError(
                 "Message type with value {} is not implemented".format(
