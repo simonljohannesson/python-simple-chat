@@ -99,7 +99,7 @@ class DatabaseHandler:
         :param message_identifier: the message identifier
         :return: a tuple of the row containing the specific chat message
         """
-        print("message_identifier:", message_identifier)
+        # print("message_identifier:", message_identifier)
         cursor = self.connection.cursor()
         row = None
         with self.database_lock:

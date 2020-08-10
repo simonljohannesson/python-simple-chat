@@ -55,7 +55,7 @@ class ServerDatabaseHandler(DatabaseHandler):
             message_list.append(msg_serialized)
             
         ser_msg_list = json.dumps(message_list)
-        print("serialized message:", type(ser_msg_list))
+        # print("serialized message:", type(ser_msg_list))
         return_message = Message(Message.TYPE_NEW_MESSAGES,
                                  ser_msg_list)
         return return_message

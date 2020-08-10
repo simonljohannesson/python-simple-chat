@@ -27,6 +27,7 @@ class ClientDatabaseUpdateThread(threading.Thread):
         self.user_name = user_name
         self.other_user = other_user
         self.kill_flag = kill_flag
+        
     
     def run(self):
         chat_identifier = create_chat_identifier(self.user_name,
@@ -46,13 +47,13 @@ class ClientDatabaseUpdateThread(threading.Thread):
                 buffer = b''
                 while True:
                     data = s.recv(4096)
-                    print("bg_thread:", buffer)
+                    # print("bg_thread:", buffer)
                     if not data:
                         break
                     buffer += data
                 des_msg = protocol_handler.reassemble_message(
                     protocol_handler.deserialize_json_object(buffer[2:]))
-                print("reassembled msg:", des_msg)
+                # print("reassembled msg:", des_msg)
 
                 if len(buffer) > 0:
                     list_of_msgs = json.loads(des_msg.content)
@@ -62,6 +63,5 @@ class ClientDatabaseUpdateThread(threading.Thread):
                         self.db_handler.add_chat_message_to_database(rec_msg)
                 s.close()
             time.sleep(1)
-            # TODO: undo this run once setup, should continue every second
-            # issue: i changed last msg to fetch frm db instead of counting length of message list
-            self.kill_flag.kill = True
+            # TODO: this thread blocks the entire client, why...
+            # self.kill_flag.kill = True

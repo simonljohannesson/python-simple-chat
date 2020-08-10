@@ -36,14 +36,15 @@ class ClientSession:
                                                self.user_name,
                                                self.other_user,
                                                kill_flag)
-        bg_thread.run()
+        bg_thread.start()
+        # bg_thread.run()
         return kill_flag
     
     def log_in(self, user_name: str):
         self._log_in_user(user_name)
 
     def open_chat(self, other_user: str) -> ThreadKillFlag:
-        self._server_config("127.0.0.1", 7897)
+        self._server_config("127.0.0.1", 55677)
         self._establish_connection()
         self._add_other_user(other_user)
         # kill_flag = self._dispatch_background_update_thread()
@@ -147,13 +148,17 @@ class ClientView:
         time.sleep(1)
         
         self.client_session._dispatch_background_update_thread()
-        time.sleep(1)
+        # time.sleep(1)
         
-        dump_data_in_chat_messages_amount_table(self.client_session.db_handler)
-        dump_data_in_chat_messages_table(self.client_session.db_handler)
+        # dump_data_in_chat_messages_amount_table(self.client_session.db_handler)
+        # dump_data_in_chat_messages_table(self.client_session.db_handler)
         
         chat_messages = self.client_session.fetch_new_messages(len(chat_messages))
-        print(chat_messages)
+        print("@@@@@@@@@@@@@@@@@@@ CHAT @@@@@@@@@@@@@@@@@@@")
+        for msg in chat_messages:
+            print(msg)
+        print("@@@@@@@@@@@@@@@@@ END CHAT @@@@@@@@@@@@@@@@@")
+        
         
             
     def request_and_validate_user_name_input(self, prompt: str) -> str:
