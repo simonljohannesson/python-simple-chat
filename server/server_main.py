@@ -30,7 +30,7 @@ def open_server_connection(address: Tuple[str, int],
 def main():
     # hostname = socket.gethostname()
     hostname = "127.0.0.1"
-    port_number = 7896
+    port_number = 7897
     address = (hostname, port_number)
     db_handler = ServerDatabaseHandler()
     open_server_connection(address, db_handler)

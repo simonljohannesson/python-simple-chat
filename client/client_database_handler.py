@@ -33,10 +33,10 @@ class ClientDatabaseHandler(DatabaseHandler):
         msgs_avail_in_db = self.query_total_message_amount(chat_identifier)
         if not last_message < msgs_avail_in_db:
             return message_list
-        for i in range(last_message, msgs_avail_in_db):
+        for i in range(last_message + 1, msgs_avail_in_db + 1):
             msg_identifier = database_handler.create_message_identifier(
                 chat_identifier, i)
             msg_row = self._request_specific_chat_message(msg_identifier)
             msg = database_handler.convert_chat_msgs_table_row_to_msg(msg_row)
-            message_list.append(msg)
+            message_list.append(str(msg))
         return message_list

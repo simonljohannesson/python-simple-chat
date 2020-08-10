@@ -43,7 +43,7 @@ class ClientSession:
         self._log_in_user(user_name)
 
     def open_chat(self, other_user: str) -> ThreadKillFlag:
-        self._server_config("127.0.0.1", 7896)
+        self._server_config("127.0.0.1", 7897)
         self._establish_connection()
         self._add_other_user(other_user)
         # kill_flag = self._dispatch_background_update_thread()
@@ -83,10 +83,10 @@ class ClientSession:
             # s.shutdown(socket.SHUT_RDWR)
             s.close()
             
-    def fetch_new_messages(self):
+    def fetch_new_messages(self, last_message: int):
         chat_identifier = database_handler.create_chat_identifier(
             self.user_name, self.other_user)
-        last_message = self.db_handler.query_total_message_amount(chat_identifier)
+        # last_message = self.db_handler.query_total_message_amount(chat_identifier)
         
         new_msgs = self.db_handler.fetch_new_messages(chat_identifier,
                                                       last_message)
@@ -152,7 +152,7 @@ class ClientView:
         dump_data_in_chat_messages_amount_table(self.client_session.db_handler)
         dump_data_in_chat_messages_table(self.client_session.db_handler)
         
-        chat_messages = self.client_session.fetch_new_messages()
+        chat_messages = self.client_session.fetch_new_messages(len(chat_messages))
         print(chat_messages)
         
             

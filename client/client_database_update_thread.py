@@ -63,4 +63,5 @@ class ClientDatabaseUpdateThread(threading.Thread):
                 s.close()
             time.sleep(1)
             # TODO: undo this run once setup, should continue every second
+            # issue: i changed last msg to fetch frm db instead of counting length of message list
             self.kill_flag.kill = True
