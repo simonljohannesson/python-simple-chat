@@ -4,3 +4,4 @@ server/__pycache__/*
 server/test.py
 chat_helper_lib/__pycache__/*
 database/*
+client/__pycache__/*
