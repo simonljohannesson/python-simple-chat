@@ -47,8 +47,8 @@ class ClientSession:
         self._server_config("127.0.0.1", 55677)
         self._establish_connection()
         self._add_other_user(other_user)
-        # kill_flag = self._dispatch_background_update_thread()
-        # return kill_flag
+        kill_flag = self._dispatch_background_update_thread()
+        return kill_flag
         
     def close_chat(self, bg_update_db_kill_flag: ThreadKillFlag):
         bg_update_db_kill_flag.kill = True

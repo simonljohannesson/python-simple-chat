@@ -64,4 +64,4 @@ class ClientDatabaseUpdateThread(threading.Thread):
                 s.close()
             time.sleep(1)
             # TODO: this thread blocks the entire client, why...
-            # self.kill_flag.kill = True
+            self.kill_flag.kill = True

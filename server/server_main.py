@@ -3,7 +3,7 @@
 
 import socket
 from typing import Tuple
-from server.server_message_handler import ServerMessageHandlerThread
+from server.server_message_handler import ServerMessageHandler
 from server.server_database_handler import ServerDatabaseHandler
 from chat_helper_lib.message import Message
 
@@ -18,10 +18,8 @@ def open_server_connection(address: Tuple[str, int],
             try:
                 client_socket, client_addr = server_socket.accept()
                 print("Connected to {}:{}".format(client_addr[0], client_addr[1]))
-                client_thread = \
-                    ServerMessageHandlerThread(client_socket, db_handler)
-                client_thread.start()
-                # client_thread.run()
+                client_recvr = ServerMessageHandler(client_socket, db_handler)
+                client_recvr.receive_process()
             except KeyboardInterrupt:
                 break
         server_socket.close()

@@ -1,12 +1,11 @@
 #message_handler.py
-import threading
 import socket
 from chat_helper_lib.message import *
 from chat_helper_lib import protocol_handler
 from chat_helper_lib.protocol_handler import ProtocolViolationError
 
 
-class MessageHandlerThread(threading.Thread):
+class MessageHandler:
     """
     Class used to dispatch threads that handles connections.
 
@@ -14,10 +13,9 @@ class MessageHandlerThread(threading.Thread):
         s (socket): The socket that a message should be received from.
     """
     def __init__(self, s: socket.socket):
-        threading.Thread.__init__(self)
         self.current_socket = s
     
-    def run(self):
+    def receive_process(self):
         try:
             with self.current_socket:
                 received_message = self._receive_client_message()
@@ -29,7 +27,7 @@ class MessageHandlerThread(threading.Thread):
     def _receive_client_message(self) -> Message:
         # fetch fixed header
         fixed_header_size = 2
-        buffer = self._receive_bytes(fixed_header_size, self.current_socket)
+        buffer = self._receive_bytes(fixed_header_size)
         if len(buffer) < 2:
             raise ProtocolViolationError("Message received not correct length.")
         
@@ -37,7 +35,7 @@ class MessageHandlerThread(threading.Thread):
         msg_len = protocol_handler.deserialize_two_byte_header(header)
         # fetch rest of message
         buffer = buffer[fixed_header_size:]
-        buffer = self._receive_bytes(msg_len, self.current_socket, buffer)
+        buffer = self._receive_bytes(msg_len, buffer)
         if len(buffer) < msg_len:
             raise ProtocolViolationError("Message received not correct length.")
         
@@ -49,12 +47,11 @@ class MessageHandlerThread(threading.Thread):
             # print(error)
             # self.current_socket.close()
  
-    
-    def _receive_bytes(self, qty_bytes: int, s: socket.socket, buffer=b''):
+    def _receive_bytes(self, qty_bytes: int, buffer=b''):
         error_msg = "Did not receive expected number of bytes. (message handler)"
         buffer_length = len(buffer)
         while buffer_length < qty_bytes:
-            data = s.recv(4096)
+            data = self.current_socket.recv(4096)
             if not data:
                 break
             buffer += data
