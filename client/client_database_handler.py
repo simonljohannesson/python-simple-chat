@@ -1,9 +1,10 @@
 from threading import Lock
 
-from chat_helper_lib import database_handler, protocol_handler
+from chat_helper_lib import database_handler, protocol_handler, message
 from chat_helper_lib.database_handler import DatabaseHandler
 # import chat_helper_lib.database_handler as database_handler
 import sqlite3
+from typing import List
 
 
 class ClientDatabaseHandler(DatabaseHandler):
@@ -43,7 +44,7 @@ class ClientDatabaseHandler(DatabaseHandler):
             connection.commit()
         connection.close()
     
-    def fetch_new_messages(self, chat_identifier: str, last_message: int):
+    def fetch_new_messages(self, chat_identifier: str, last_message: int) -> List[message.Message]:
         con = self.open_connection()
         message_list = []
         msgs_avail_in_db = self.query_total_message_amount(con, chat_identifier)
@@ -54,7 +55,7 @@ class ClientDatabaseHandler(DatabaseHandler):
                 chat_identifier, i)
             msg_row = self._request_specific_chat_message(con, msg_identifier)
             msg = database_handler.convert_chat_msgs_table_row_to_msg(msg_row)
-            message_list.append(str(msg))
+            message_list.append(msg)
         return message_list
 
     def _table_exists(self,

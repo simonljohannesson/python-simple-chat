@@ -160,7 +160,6 @@ class DatabaseHandler:
         :param chat_identifier: the chat identifier
         :return: None
         """
-        print("Incrementing {} number by 1".format(chat_identifier))
         sql_cmd = """
                 INSERT
                     INTO chat_message_amount

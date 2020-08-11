@@ -99,71 +99,78 @@ class ClientView:
         self.client_session = client_session
     
     def run(self):
-        # self.clear_terminal()
-        # user_name_prompt = "Enter username: (1-30 alpha numeric characters)"
-        # user_name = self.request_and_validate_user_name_input(user_name_prompt)
-        # chat_with_prompt = "Enter username of whoever you want to talk to: " \
-        #     "(1-30 alpha numeric characters)"
-        # chat_with = self.request_and_validate_user_name_input(chat_with_prompt)
-        # print("Welcome {}!".format(user_name))
-        # print("Now chatting with {}.".format(chat_with))
-        user_name = "user1"
-        chat_with = "user2"
-        user_input = "hello"
+        self.clear_terminal()
+        user_name_prompt = "Enter username: (1-30 alpha numeric characters)"
+        user_name = self.request_and_validate_user_name_input(user_name_prompt)
+        chat_with_prompt = "Enter username of whoever you want to talk to: " \
+            "(1-30 alpha numeric characters)"
+        chat_with = self.request_and_validate_user_name_input(chat_with_prompt)
+        print("Welcome {}!".format(user_name))
+        print("Now chatting with {}.".format(chat_with))
+        # user_name = "user1"
+        # chat_with = "user2"
+        # user_input = "hello"
         
         self.client_session.log_in(user_name)
         bg_thread_kill_flag = self.client_session.open_chat(chat_with)
         
         chat_messages = []
-        # chat_open = True
-        # help_msg = "You have a few options:\n" \
-        #            "1. Send message: enter message and press return.\n" \
-        #            "2. Fetch new messages: enter 'fetch()' and press return\n" \
-        #            "3. Show this help message: enter 'help()' and press return"\
-        #            "4. Exit session: enter 'exit()' and press return"
-        # while chat_open:
-        #     print("Enter your message and press return to send.",
-        #           "(For help enter: 'help()' and press return)")
-        #     user_input = input()
-        #     if user_input == "help()":
-        #         self.clear_terminal()
-        #         print(help_msg)
-        #     elif user_input == "fetch()":
-        #         new_msgs = self.client_session.fetch_new_messages(
-        #             len(chat_messages))
-        #         for each in new_msgs:
-        #             chat_messages.append(each)
-        #         self.clear_terminal()
-        #         for each in chat_messages:
-        #             print(each)
-        #     elif user_input == "exit()":
-        #         chat_open = False
-        #         bg_thread_kill_flag.kill = True
-        #
-            # self.client_session.send_chat_message(user_input)
-        # self.client_session._dispatch_background_update_thread()
+        chat_open = True
+        help_msg = "You have a few options:\n" \
+                   "1. Send message: enter message and press return.\n" \
+                   "2. Fetch new messages: enter 'fetch()' and press return\n" \
+                   "3. Show this help message: enter 'help()' and press return"\
+                   "4. Exit session: enter 'exit()' and press return"
+        while chat_open:
+            print("Enter your message and press return to send.",
+                  "(For help enter: 'help()' and press return)")
+            try:
+                user_input = input()
+            except KeyboardInterrupt:
+                user_input = "exit()"
+            if user_input == "help()":
+                self.clear_terminal()
+                print(help_msg)
+            elif user_input == "fetch()":
+                new_msgs = self.client_session.fetch_new_messages(
+                    len(chat_messages))
+                for each in new_msgs:
+                    chat_messages.append(each)
+                self.clear_terminal()
+                print("============= Messages in chat with: {} =============".format(chat_with))
+                for msg in chat_messages:
+                    print("{} said: {}".format(msg.sender, msg.content))
+                print("============= End of messages ============")
+            elif user_input == "exit()":
+                chat_open = False
+                bg_thread_kill_flag.kill = True
+            else:
+                self.client_session.send_chat_message(user_input)
 
-        self.client_session.send_chat_message("one")
-        self.client_session.send_chat_message("two")
-        self.client_session.send_chat_message("three")
-        self.client_session.send_chat_message("four")
-        time.sleep(4)
-        self.client_session.send_chat_message("good day")
-        self.client_session.send_chat_message("good day")
-        self.client_session.send_chat_message("good day")
-        self.client_session.send_chat_message("good day")
         
         # self.client_session._dispatch_background_update_thread()
-        time.sleep(1)
+
+        # self.client_session.send_chat_message("one")
+        # self.client_session.send_chat_message("two")
+        # self.client_session.send_chat_message("three")
+        # self.client_session.send_chat_message("four")
+        # time.sleep(4)
+        # self.client_session.send_chat_message("good day")
+        # self.client_session.send_chat_message("good day")
+        # self.client_session.send_chat_message("good day")
+        # self.client_session.send_chat_message("good day")
+        
+        # self.client_session._dispatch_background_update_thread()
+        # time.sleep(1)
         
         # dump_data_in_chat_messages_amount_table(self.client_session.db_handler)
         # dump_data_in_chat_messages_table(self.client_session.db_handler)
         
-        chat_messages = self.client_session.fetch_new_messages(len(chat_messages))
-        print("@@@@@@@@@@@@@@@@@@@ CHAT @@@@@@@@@@@@@@@@@@@")
-        for msg in chat_messages:
-            print(msg)
-        print("@@@@@@@@@@@@@@@@@ END CHAT @@@@@@@@@@@@@@@@@")
+        # chat_messages = self.client_session.fetch_new_messages(len(chat_messages))
+        # print("@@@@@@@@@@@@@@@@@@@ CHAT @@@@@@@@@@@@@@@@@@@")
+        # for msg in chat_messages:
+        #     print(msg)
+        # print("@@@@@@@@@@@@@@@@@ END CHAT @@@@@@@@@@@@@@@@@")
         
         
             
