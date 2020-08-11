@@ -56,19 +56,16 @@ Table 2
     +----------------+----------------------+
 
 """
-import socket
 import sqlite3
 from typing import Tuple
 from threading import Lock
 from chat_helper_lib.message import Message
 from chat_helper_lib import protocol_handler
-import re
 
 
 class DatabaseHandler:
     def __init__(self):
         self.database_lock = Lock()
-        # self.connection = self._setup_ram_sqlite_db()
 
     def _insert_new_row_in_chat_messages_tbl(self,
                                              connection: sqlite3.Connection,
@@ -102,7 +99,6 @@ class DatabaseHandler:
         :param message_identifier: the message identifier
         :return: a tuple of the row containing the specific chat message
         """
-        # print("message_identifier:", message_identifier)
         cursor = connection.cursor()
         row = None
         with self.database_lock:
@@ -182,6 +178,7 @@ class DatabaseHandler:
         """
         Stores a chat message in the database.
         
+        :param connection:
         :param message: the message that should be saved
         :return: None
         """

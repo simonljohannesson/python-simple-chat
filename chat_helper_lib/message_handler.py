@@ -1,4 +1,4 @@
-#message_handler.py
+# message_handler.py
 import socket
 from chat_helper_lib.message import *
 from chat_helper_lib import protocol_handler
@@ -42,13 +42,8 @@ class MessageHandler:
         msg_content = protocol_handler.deserialize_json_object(buffer)
         message = protocol_handler.reassemble_message(msg_content)
         return message
-        # except ProtocolViolationError as error:
-        #     TODO: log
-            # print(error)
-            # self.current_socket.close()
  
     def _receive_bytes(self, qty_bytes: int, buffer=b''):
-        error_msg = "Did not receive expected number of bytes. (message handler)"
         buffer_length = len(buffer)
         while buffer_length < qty_bytes:
             data = self.current_socket.recv(4096)

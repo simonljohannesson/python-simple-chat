@@ -1,8 +1,5 @@
-from threading import Lock
-
-from chat_helper_lib import database_handler, protocol_handler, message
+from chat_helper_lib import database_handler, message
 from chat_helper_lib.database_handler import DatabaseHandler
-# import chat_helper_lib.database_handler as database_handler
 import sqlite3
 from typing import List
 
@@ -10,10 +7,8 @@ from typing import List
 class ClientDatabaseHandler(DatabaseHandler):
     def __init__(self, db_path):
         super().__init__()
-        # self.database_lock = Lock()
         self.db_path = db_path
         self._setup_sqlite_db()
-        # self.db_path = "./../database/client/clients.db"
     
     def open_connection(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.db_path)
@@ -25,9 +20,7 @@ class ClientDatabaseHandler(DatabaseHandler):
         
         :return: the connection to the created database
         """
-        # create an sqlite database in ram
         connection = self.open_connection()
-        # create a cursor to the database
         cursor = connection.cursor()
         with self.database_lock:
             if self._table_exists(connection, "chat_message_amount"):

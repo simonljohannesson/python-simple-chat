@@ -27,9 +27,8 @@ Specification of a serialized message.
 from chat_helper_lib.message import Message
 from typing import Dict
 import json
-import sys
 
-MESSAGE_LENGTH_WITHOUT_CONTENT = len('{"msg_type": 1, "content": "", "sender": "", "receiver": ""}')
+
 
 
 class ProtocolViolationError(Exception):

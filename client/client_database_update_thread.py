@@ -12,7 +12,7 @@ import json
 class ThreadKillFlag:
     def __init__(self):
         self.kill = False
-        
+
 
 class ClientDatabaseUpdateThread(threading.Thread):
     def __init__(self,
@@ -27,8 +27,7 @@ class ClientDatabaseUpdateThread(threading.Thread):
         self.user_name = user_name
         self.other_user = other_user
         self.kill_flag = kill_flag
-        
-    
+
     def run(self):
         chat_identifier = create_chat_identifier(self.user_name,
                                                  self.other_user)
@@ -43,26 +42,21 @@ class ClientDatabaseUpdateThread(threading.Thread):
                                 self.other_user)
             con.close()
             ser_msg = protocol_handler.serialize_message(query_msg)
-            # print("BG thread trying to fetch newer messages than: {}".format(last_message))
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect(self.server_address)
                 s.sendall(ser_msg)
-                # receive answer
                 buffer = b''
                 while True:
                     data = s.recv(4096)
-                    # print("bg_thread:", buffer)
                     if not data:
                         break
                     buffer += data
                 des_msg = protocol_handler.reassemble_message(
                     protocol_handler.deserialize_json_object(buffer[2:]))
-                # print("reassembled msg:", des_msg)
 
                 if len(buffer) > 0:
                     con = self.db_handler.open_connection()
                     list_of_msgs = json.loads(des_msg.content)
-                    # print(len(list_of_msgs), "messages received by bg thread")
                     for each in list_of_msgs:
                         msg_cont = protocol_handler.deserialize_json_object(each)
                         rec_msg = protocol_handler.reassemble_message(msg_cont)

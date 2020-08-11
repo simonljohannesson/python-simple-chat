@@ -1,16 +1,12 @@
 #!/bin/usr/python3
-
-
 import socket
 from typing import Tuple
 from server.server_message_handler import ServerMessageHandler
 from server.server_database_handler import ServerDatabaseHandler
-from chat_helper_lib.message import Message
 
 
 def open_server_connection(address: Tuple[str, int],
                            db_handler: ServerDatabaseHandler):
-    # try:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         server_socket.bind(address)
         server_socket.listen()
@@ -23,11 +19,7 @@ def open_server_connection(address: Tuple[str, int],
             except KeyboardInterrupt:
                 break
         server_socket.close()
-    # except KeyboardInterrupt as e:
-        # server_socket.shutdown(socket.SHUT_RDWR)
-        # server_socket.close()
-        # raise e
-            
+
 
 def main():
     # hostname = socket.gethostname()

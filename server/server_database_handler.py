@@ -7,7 +7,6 @@ from chat_helper_lib import protocol_handler
 import json
 
 
-
 class ServerDatabaseHandler(DatabaseHandler):
     def __init__(self):
         super().__init__()
@@ -21,9 +20,7 @@ class ServerDatabaseHandler(DatabaseHandler):
         
         :return: the connection to the created database
         """
-        # create an sqlite database in ram
         connection = sqlite3.connect(":memory:")
-        # create a cursor to the database
         cursor = connection.cursor()
         with self.database_lock:
             self._setup_chat_message_amount_table(cursor)
@@ -56,11 +53,6 @@ class ServerDatabaseHandler(DatabaseHandler):
             message_list.append(msg_serialized)
             
         ser_msg_list = json.dumps(message_list)
-        # print("serialized message:", type(ser_msg_list))
         return_message = Message(Message.TYPE_NEW_MESSAGES,
                                  ser_msg_list)
         return return_message
-
-# if __name__ == '__main__':
-#     for each in range(1, 10):
-#         print(each)

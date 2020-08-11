@@ -1,16 +1,13 @@
 #!/bin/usr/python
-
-
 import socket
 from chat_helper_lib.message import *
 from chat_helper_lib import protocol_handler, database_handler
-import json
 import client.client_database_handler as client_database_handler
 # test module
 from server.test import dump_data_in_chat_messages_amount_table, dump_data_in_chat_messages_table
 from client_database_update_thread import ClientDatabaseUpdateThread, ThreadKillFlag
 import os
-import time
+
 
 class ClientSession:
     def __init__(self,
@@ -37,7 +34,6 @@ class ClientSession:
                                                self.other_user,
                                                kill_flag)
         bg_thread.start()
-        # bg_thread.run()
         return kill_flag
     
     def log_in(self, user_name: str):
@@ -75,19 +71,15 @@ class ClientSession:
         serialized_message = protocol_handler.serialize_message(message)
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                # print("sending: {}".format(serialized_message))
                 s.connect(self.server_address)
                 s.sendall(serialized_message)
-                # print("sent: {}".format(serialized_message))
                 
         finally:
-            # s.shutdown(socket.SHUT_RDWR)
             s.close()
             
     def fetch_new_messages(self, last_message: int):
         chat_identifier = database_handler.create_chat_identifier(
             self.user_name, self.other_user)
-        # last_message = self.db_handler.query_total_message_amount(chat_identifier)
         
         new_msgs = self.db_handler.fetch_new_messages(chat_identifier,
                                                       last_message)
@@ -147,33 +139,6 @@ class ClientView:
             else:
                 self.client_session.send_chat_message(user_input)
 
-        
-        # self.client_session._dispatch_background_update_thread()
-
-        # self.client_session.send_chat_message("one")
-        # self.client_session.send_chat_message("two")
-        # self.client_session.send_chat_message("three")
-        # self.client_session.send_chat_message("four")
-        # time.sleep(4)
-        # self.client_session.send_chat_message("good day")
-        # self.client_session.send_chat_message("good day")
-        # self.client_session.send_chat_message("good day")
-        # self.client_session.send_chat_message("good day")
-        
-        # self.client_session._dispatch_background_update_thread()
-        # time.sleep(1)
-        
-        # dump_data_in_chat_messages_amount_table(self.client_session.db_handler)
-        # dump_data_in_chat_messages_table(self.client_session.db_handler)
-        
-        # chat_messages = self.client_session.fetch_new_messages(len(chat_messages))
-        # print("@@@@@@@@@@@@@@@@@@@ CHAT @@@@@@@@@@@@@@@@@@@")
-        # for msg in chat_messages:
-        #     print(msg)
-        # print("@@@@@@@@@@@@@@@@@ END CHAT @@@@@@@@@@@@@@@@@")
-        
-        
-            
     def request_and_validate_user_name_input(self, prompt: str) -> str:
         user_name_valid = False
         user_name = ""
@@ -197,55 +162,14 @@ class ClientView:
             return True
         else:
             return False
-    
+
+
 def main():
     chat_db = client_database_handler.ClientDatabaseHandler("./../database/client/clients.db")
     client_session = ClientSession(chat_db)
     client_view = ClientView(client_session)
     client_view.run()
     
-    # # server_hostname = "computer"
-    # server_hostname = "127.0.0.1"
-    # server_port_no = 7897
-    # server_address = (server_hostname, server_port_no)
-    # # for i in range(1000):
-    #
-    # # setup database
-    # client_db = client.client_database_handler.ClientDatabaseHandler()
-    #
-    # # create a message
-    # # message = Message(Message.TYPE_CHAT_MESSAGE, "f", "Thor", "Freya")
-    # message = Message(Message.TYPE_REQUEST_NEW_MESSAGES,
-    #                   "0", "Thor", "Freya")
-    # serialized_msg = protocol_handler.serialize_message(message)
-    #
-    # with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
-    #     client_socket.connect(server_address)
-    #     send_bytes = serialized_msg
-    #     client_socket.sendall(send_bytes)
-    #     print("Data sent: ->{}<- to {}:{}".format(
-    #         send_bytes, server_address[0], server_address[1]))
-    #     print("Message: {}".format(message))
-    #     if message.msg_type == Message.TYPE_REQUEST_NEW_MESSAGES:
-    #         buffer = b''
-    #         while True:
-    #             data = client_socket.recv(4096)
-    #             if not data:
-    #                 break
-    #             buffer += data
-    #         print("Received answer back:", buffer)
-    #         des_msg = protocol_handler.reassemble_message(
-    #             protocol_handler.deserialize_json_object(buffer[2:]))
-    #
-    #         list_of_msgs = json.loads(des_msg.content)
-    #         for each in list_of_msgs:
-    #             msg_cont = protocol_handler.deserialize_json_object(each)
-    #             rec_msg = protocol_handler.reassemble_message(msg_cont)
-    #             client_db.add_chat_message_to_database(rec_msg)
-    #
-    #         dump_data_in_chat_messages_table(client_db)
-    #         dump_data_in_chat_messages_amount_table(client_db)
-
 
 if __name__ == "__main__":
     main()
