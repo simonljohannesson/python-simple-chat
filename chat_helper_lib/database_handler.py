@@ -56,6 +56,7 @@ Table 2
     +----------------+----------------------+
 
 """
+import socket
 import sqlite3
 from typing import Tuple
 from threading import Lock
@@ -67,9 +68,10 @@ import re
 class DatabaseHandler:
     def __init__(self):
         self.database_lock = Lock()
-        self.connection = self._setup_ram_sqlite_db()
+        # self.connection = self._setup_ram_sqlite_db()
 
     def _insert_new_row_in_chat_messages_tbl(self,
+                                             connection: sqlite3.Connection,
                                              message_identifier: str,
                                              message: str,
                                              sender: str) -> None:
@@ -81,14 +83,15 @@ class DatabaseHandler:
         :param sender: sender of the message
         :return: None
         """
-        cursor = self.connection.cursor()
+        cursor = connection.cursor()
         with self.database_lock:
             cursor.execute(
                 "INSERT INTO chat_messages values (?, ?, ?)",
                 (message_identifier, message, sender))
-            self.connection.commit()
+            connection.commit()
 
     def _request_specific_chat_message(self,
+                                       connection: sqlite3.Connection,
                                        message_identifier: str
                                        ) -> Tuple[str, str, str]:
         """
@@ -100,7 +103,7 @@ class DatabaseHandler:
         :return: a tuple of the row containing the specific chat message
         """
         # print("message_identifier:", message_identifier)
-        cursor = self.connection.cursor()
+        cursor = connection.cursor()
         row = None
         with self.database_lock:
             cursor.execute(
@@ -120,18 +123,20 @@ class DatabaseHandler:
             raise NotPresentInDatabase
         return row
 
-
-    def query_total_message_amount(self, chat_identifier: str) -> int:
+    def query_total_message_amount(self,
+                                   connection: sqlite3.Connection,
+                                   chat_identifier: str) -> int:
         """
         Queries the database how many messages are saved to the chat_identifiers chat.
         
         If the chat_identifier is not found in the database the return value will be 0.
+        :param connection:
         :param chat_identifier: the chats identifier
         :return: the number of messages that are in the chat
         """
         total_message_amount = 0
         with self.database_lock:
-            cursor = self.connection.cursor()
+            cursor = connection.cursor()
             cursor.execute(
                 """
                 SELECT
@@ -147,12 +152,15 @@ class DatabaseHandler:
                 total_message_amount = stored_amount[0]  # returns a 1-tuple
         return total_message_amount
     
-    def _increment_total_message_amount(self, chat_identifier: str) -> None:
+    def _increment_total_message_amount(self,
+                                        connection: sqlite3.Connection,
+                                        chat_identifier: str) -> None:
         """
         Increments the total message amount in the database for the chat with the chat identifier.
         :param chat_identifier: the chat identifier
         :return: None
         """
+        print("Incrementing {} number by 1".format(chat_identifier))
         sql_cmd = """
                 INSERT
                     INTO chat_message_amount
@@ -164,11 +172,14 @@ class DatabaseHandler:
                 DO UPDATE SET
                     total_message_amount=total_message_amount+1
         """
-        cursor = self.connection.cursor()
+        cursor = connection.cursor()
         with self.database_lock:
             cursor.execute(sql_cmd, (chat_identifier,))
+        connection.commit()
 
-    def add_chat_message_to_database(self, message: Message) -> None:
+    def add_chat_message_to_database(self,
+                                     connection: sqlite3.Connection,
+                                     message: Message) -> None:
         """
         Stores a chat message in the database.
         
@@ -189,10 +200,10 @@ class DatabaseHandler:
         
         chat_id = create_chat_identifier(sender, receiver)
         # + 1 so that messages identifier match the queries
-        msg_number = self.query_total_message_amount(chat_id) + 1
+        msg_number = self.query_total_message_amount(connection, chat_id) + 1
         msg_id = create_message_identifier(chat_id, msg_number)
-        self._insert_new_row_in_chat_messages_tbl(msg_id, msg, sender)
-        self._increment_total_message_amount(chat_id)
+        self._insert_new_row_in_chat_messages_tbl(connection, msg_id, msg, sender)
+        self._increment_total_message_amount(connection, chat_id)
 
     def _setup_chat_message_amount_table(self, cursor: sqlite3.Cursor) -> None:
         """
@@ -203,6 +214,7 @@ class DatabaseHandler:
         :param cursor: cursor from the connection of sqlite3 database
         :return: None
         """
+        # with self.database_lock:
         cursor.execute(
             """CREATE TABLE chat_message_amount
             (chat_identifier VARCHAR PRIMARY KEY NOT NULL,
@@ -218,6 +230,7 @@ class DatabaseHandler:
         :param cursor: cursor from the connection of sqlite3 database
         :return: None
         """
+        # with self.database_lock:
         cursor.execute(
             """CREATE TABLE chat_messages
             (message_identifier VARCHAR PRIMARY KEY NOT NULL ,
@@ -256,8 +269,7 @@ def create_message_identifier(chat_identifier: str,
     return msg_id
 
 
-def convert_chat_msgs_table_row_to_msg(row: Tuple[str, str, str]
-                                        ) -> Message:
+def convert_chat_msgs_table_row_to_msg(row: Tuple[str, str, str]) -> Message:
     message_identifier = row[0]
     content = row[1]
     sender = row[2]

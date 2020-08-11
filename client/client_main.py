@@ -44,7 +44,7 @@ class ClientSession:
         self._log_in_user(user_name)
 
     def open_chat(self, other_user: str) -> ThreadKillFlag:
-        self._server_config("127.0.0.1", 55677)
+        self._server_config("127.0.0.1", 55678)
         self._establish_connection()
         self._add_other_user(other_user)
         kill_flag = self._dispatch_background_update_thread()
@@ -141,14 +141,20 @@ class ClientView:
         #         bg_thread_kill_flag.kill = True
         #
             # self.client_session.send_chat_message(user_input)
+        # self.client_session._dispatch_background_update_thread()
+
         self.client_session.send_chat_message("one")
         self.client_session.send_chat_message("two")
         self.client_session.send_chat_message("three")
         self.client_session.send_chat_message("four")
-        time.sleep(1)
+        time.sleep(4)
+        self.client_session.send_chat_message("good day")
+        self.client_session.send_chat_message("good day")
+        self.client_session.send_chat_message("good day")
+        self.client_session.send_chat_message("good day")
         
-        self.client_session._dispatch_background_update_thread()
-        # time.sleep(1)
+        # self.client_session._dispatch_background_update_thread()
+        time.sleep(1)
         
         # dump_data_in_chat_messages_amount_table(self.client_session.db_handler)
         # dump_data_in_chat_messages_table(self.client_session.db_handler)
@@ -186,7 +192,7 @@ class ClientView:
             return False
     
 def main():
-    chat_db = client_database_handler.ClientDatabaseHandler()
+    chat_db = client_database_handler.ClientDatabaseHandler("./../database/client/clients.db")
     client_session = ClientSession(chat_db)
     client_view = ClientView(client_session)
     client_view.run()

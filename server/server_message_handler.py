@@ -24,7 +24,8 @@ class ServerMessageHandler(message_handler.MessageHandler):
         """
         # print("Determine action for: {}".format(str(message)))
         if message.msg_type == Message.TYPE_CHAT_MESSAGE:
-            self.db_handler.add_chat_message_to_database(message)
+            connection = self.db_handler.connection
+            self.db_handler.add_chat_message_to_database(connection, message)
             dump_data_in_chat_messages_table(self.db_handler)
             dump_data_in_chat_messages_amount_table(self.db_handler)
             

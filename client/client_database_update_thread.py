@@ -33,13 +33,17 @@ class ClientDatabaseUpdateThread(threading.Thread):
         chat_identifier = create_chat_identifier(self.user_name,
                                                  self.other_user)
         while not self.kill_flag.kill:
+            con = self.db_handler.open_connection()
             last_message = self.db_handler.query_total_message_amount(
+                con,
                 chat_identifier)
             query_msg = Message(Message.TYPE_REQUEST_NEW_MESSAGES,
                                 last_message,
                                 self.user_name,
                                 self.other_user)
+            con.close()
             ser_msg = protocol_handler.serialize_message(query_msg)
+            print("BG thread trying to fetch newer messages than: {}".format(last_message))
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect(self.server_address)
                 s.sendall(ser_msg)
@@ -53,15 +57,19 @@ class ClientDatabaseUpdateThread(threading.Thread):
                     buffer += data
                 des_msg = protocol_handler.reassemble_message(
                     protocol_handler.deserialize_json_object(buffer[2:]))
-                # print("reassembled msg:", des_msg)
+                print("reassembled msg:", des_msg)
 
                 if len(buffer) > 0:
+                    con = self.db_handler.open_connection()
                     list_of_msgs = json.loads(des_msg.content)
+                    print(len(list_of_msgs), "messages received by bg thread")
                     for each in list_of_msgs:
                         msg_cont = protocol_handler.deserialize_json_object(each)
                         rec_msg = protocol_handler.reassemble_message(msg_cont)
-                        self.db_handler.add_chat_message_to_database(rec_msg)
+                        print("before")
+                        self.db_handler.add_chat_message_to_database(con, rec_msg)
+                        print("after")
+                    con.close()
                 s.close()
-            time.sleep(1)
-            # TODO: this thread blocks the entire client, why...
-            self.kill_flag.kill = True
+            time.sleep(2)
+            # self.kill_flag.kill = True

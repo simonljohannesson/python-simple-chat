@@ -38,6 +38,7 @@ class ServerDatabaseHandler(DatabaseHandler):
             message.sender,
             message.receiver)
         messages_available_in_db = self.query_total_message_amount(
+            self.connection,
             chat_identifier)
         
         message_list = []
@@ -49,7 +50,7 @@ class ServerDatabaseHandler(DatabaseHandler):
         for i in range(clients_last_message + 1, messages_available_in_db + 1):
             message_identifier = database_handler.create_message_identifier(
                 chat_identifier, i)
-            msg_row = self._request_specific_chat_message(message_identifier)
+            msg_row = self._request_specific_chat_message(self.connection, message_identifier)
             msg = database_handler.convert_chat_msgs_table_row_to_msg(msg_row)
             msg_serialized = protocol_handler.serialize_message_content(msg)
             message_list.append(msg_serialized)
