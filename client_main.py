@@ -1,17 +1,24 @@
 #!/bin/usr/python
-import socket
-from chat_helper_lib.message import *
-from chat_helper_lib import protocol_handler, database
-import client.client_database_handler as client_database_handler
-# test module
-from server.test import dump_data_in_chat_messages_amount_table, dump_data_in_chat_messages_table
-from client_database_update_thread import ClientDatabaseUpdateThread, ThreadKillFlag
+import database
+import client
 import os
+import threading
+from client import DBHandler
+from database import create_chat_identifier
+from protocol import Message
+import protocol
+import time
+import socket
+import json
+
+
+PATH_TO_DATABASE = "../client_database/client.db"
+#TODO: ip and port address
 
 
 class ClientSession:
     def __init__(self,
-                 db_handler: client_database_handler.ClientDatabaseHandler):
+                 db_handler: client.DBHandler):
         self.db_handler = db_handler
         
     def _server_config(self, server_hostname: str, server_port_no: int):
@@ -25,28 +32,28 @@ class ClientSession:
     def _add_other_user(self, other_user: str):
         self.other_user = other_user
         
-    def _dispatch_background_update_thread(self) -> ThreadKillFlag:
+    def _dispatch_background_update_thread(self) -> client.ThreadKillFlag:
         
-        kill_flag = ThreadKillFlag()
-        bg_thread = ClientDatabaseUpdateThread(self.server_address,
-                                               self.db_handler,
-                                               self.user_name,
-                                               self.other_user,
-                                               kill_flag)
+        kill_flag = client.ThreadKillFlag()
+        bg_thread = client.BackgroundDatabaseRefresher(self.server_address,
+                                                self.db_handler,
+                                                self.user_name,
+                                                self.other_user,
+                                                kill_flag)
         bg_thread.start()
         return kill_flag
     
     def log_in(self, user_name: str):
         self._log_in_user(user_name)
 
-    def open_chat(self, other_user: str) -> ThreadKillFlag:
-        self._server_config("127.0.0.1", 55679)
+    def open_chat(self, other_user: str) -> client.ThreadKillFlag:
+        self._server_config("127.0.0.1", 55678)
         self._establish_connection()
         self._add_other_user(other_user)
         kill_flag = self._dispatch_background_update_thread()
         return kill_flag
         
-    def close_chat(self, bg_update_db_kill_flag: ThreadKillFlag):
+    def close_chat(self, bg_update_db_kill_flag: client.ThreadKillFlag):
         bg_update_db_kill_flag.kill = True
         # TODO: anything else?
         
@@ -64,11 +71,11 @@ class ClientSession:
             raise timeout
         
     def send_chat_message(self, text: str):
-        message = Message(Message.TYPE_CHAT_MESSAGE,
+        message = Message(Message.CHAT_MESSAGE,
                           text,
                           self.user_name,
                           self.other_user)
-        serialized_message = protocol_handler.serialize_message(message)
+        serialized_message = protocol.serialize_message(message)
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect(self.server_address)
@@ -80,9 +87,7 @@ class ClientSession:
     def fetch_new_messages(self, last_message: int):
         chat_identifier = database.create_chat_identifier(
             self.user_name, self.other_user)
-        
-        new_msgs = self.db_handler.fetch_new_messages(chat_identifier,
-                                                      last_message)
+        new_msgs = self.db_handler.new_messages(chat_identifier, last_message)
         return new_msgs
 
 
@@ -165,7 +170,7 @@ class ClientView:
 
 
 def main():
-    chat_db = client_database_handler.ClientDatabaseHandler("./../database/client/clients.db")
+    chat_db = client.DBHandler(PATH_TO_DATABASE)
     client_session = ClientSession(chat_db)
     client_view = ClientView(client_session)
     client_view.run()

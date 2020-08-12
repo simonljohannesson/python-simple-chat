@@ -1,4 +1,4 @@
-# database.py
+# client.py
 """
 This module is designed to create and operate on an sqlite3 database with the
 specifications described further down.
@@ -59,19 +59,19 @@ Table 2
 import sqlite3
 from typing import Tuple
 from threading import Lock
-from chat_helper_lib.message import Message
-from chat_helper_lib import protocol_handler
+from protocol import Message
+import protocol
 
 
-class DatabaseHandler:
+class Handler:
     def __init__(self):
         self.database_lock = Lock()
 
-    def _insert_new_row_in_chat_messages_tbl(self,
-                                             connection: sqlite3.Connection,
-                                             message_identifier: str,
-                                             message: str,
-                                             sender: str) -> None:
+    def _add_chat_message_row(self,
+                              connection: sqlite3.Connection,
+                              message_identifier: str,
+                              message: str,
+                              sender: str) -> None:
         """
         Inserts a new row in the chat_messages table.
         
@@ -87,10 +87,10 @@ class DatabaseHandler:
                 (message_identifier, message, sender))
             connection.commit()
 
-    def _request_specific_chat_message(self,
-                                       connection: sqlite3.Connection,
-                                       message_identifier: str
-                                       ) -> Tuple[str, str, str]:
+    def _get_chat_message(self,
+                          connection: sqlite3.Connection,
+                          message_identifier: str
+                          ) -> Tuple[str, str, str]:
         """
         Queries the database for a specific chat message.
         
@@ -119,9 +119,9 @@ class DatabaseHandler:
             raise NotPresentInDatabase
         return row
 
-    def query_total_message_amount(self,
-                                   connection: sqlite3.Connection,
-                                   chat_identifier: str) -> int:
+    def total_message_amount(self,
+                             connection: sqlite3.Connection,
+                             chat_identifier: str) -> int:
         """
         Queries the database how many messages are saved to the chat_identifiers chat.
         
@@ -182,9 +182,9 @@ class DatabaseHandler:
         :param message: the message that should be saved
         :return: None
         """
-        if not protocol_handler.has_valid_content_format(message) or \
-                not protocol_handler.has_valid_receiver_format(message) or\
-                not protocol_handler.has_valid_sender_format(message):
+        if not protocol.valid_content_format(message) or \
+                not protocol.valid_receiver_format(message) or\
+                not protocol.valid_sender_format(message):
             # TODO: log error
             print("Message not added to database, incorrect format, message:",
                   message)
@@ -196,10 +196,11 @@ class DatabaseHandler:
         
         chat_id = create_chat_identifier(sender, receiver)
         # + 1 so that messages identifier match the queries
-        msg_number = self.query_total_message_amount(connection, chat_id) + 1
+        msg_number = self.total_message_amount(connection, chat_id) + 1
         msg_id = create_message_identifier(chat_id, msg_number)
-        self._insert_new_row_in_chat_messages_tbl(connection, msg_id, msg, sender)
+        self._add_chat_message_row(connection, msg_id, msg, sender)
         self._increment_total_message_amount(connection, chat_id)
+
 
     def _setup_chat_message_amount_table(self, cursor: sqlite3.Cursor) -> None:
         """
@@ -265,7 +266,7 @@ def create_message_identifier(chat_identifier: str,
     return msg_id
 
 
-def convert_chat_msgs_table_row_to_msg(row: Tuple[str, str, str]) -> Message:
+def table_row_to_msg(row: Tuple[str, str, str]) -> Message:
     message_identifier = row[0]
     content = row[1]
     sender = row[2]
@@ -275,7 +276,7 @@ def convert_chat_msgs_table_row_to_msg(row: Tuple[str, str, str]) -> Message:
     else:
         receiver = second_user
     
-    message = Message(Message.TYPE_CHAT_MESSAGE,
+    message = Message(Message.CHAT_MESSAGE,
                       content,
                       sender,
                       receiver)

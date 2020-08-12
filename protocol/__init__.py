@@ -1,4 +1,4 @@
-# protocol_handler.py
+# protocol.py
 """The purpose of this module is to handle the serialization and deserialization
 of a Message object, and it is designed to do so while complying with the below
 specification of a serialized message.
@@ -24,11 +24,128 @@ Specification of a serialized message.
         * Shall contain key "content", string containing the message content.
         * Is of variable length.
 """
-from chat_helper_lib.message import Message
 from typing import Dict
 import json
+import socket
 
 
+class InvalidMessageFormatError(Exception):
+    def __init__(self, msg: str):
+        self.msg = msg
+
+
+class Message:
+    """
+    A class that represents a message that is sent between a client and server.
+    
+    Message specifications by message msg_type:
+        CHAT_MESSAGE
+            * content:      non-empty string, the chat message
+            * sender:       non-empty string
+            * receiver:     non-empty string
+        REQUEST_NEW_MESSAGES
+            * content:      non-empty string, id of last number received
+            * sender:       non-empty string
+            * receiver:     non-empty string
+    
+    Attributes
+        CHAT_MESSAGE -- message msg_type used when message is a chat message
+        REQUEST_NEW_MESSAGES -- message msg_type used when requesting new
+                                     messages that are available on server.
+    
+    """
+    CHAT_MESSAGE = 0
+    REQUEST_NEW_MESSAGES = 1
+    NEW_MESSAGES = 2
+    
+    def __init__(self, msg_type: int,
+                 content="",
+                 sender="",
+                 receiver=""):
+        """
+        Initializes a Message object.
+        
+        :raises InvalidMessageFormatError: Exception is raised when the message
+            has an incorrect format.
+        :param msg_type: msg_type of message
+        :param content: content of the message
+        :param sender: name of sender
+        :param receiver: name of receiver
+        """
+        
+        self.msg_type = msg_type
+        self.content = str(content)
+        self.sender = str(sender)
+        self.receiver = str(receiver)
+        
+        if msg_type is Message.CHAT_MESSAGE and content == "":
+            raise InvalidMessageFormatError("Chat message text is missing.")
+    
+    def __str__(self):
+        str_rep = '{{"msg_type": "{msg_type}", "content": "{content}", ' \
+                  '"sender": "{sender}", "receiver": "{receiver}"}}'
+        return str_rep.format(msg_type=self.msg_type,
+                              content=self.content,
+                              sender=self.sender,
+                              receiver=self.receiver)
+
+
+class ConnectionController:
+    """
+    Class used to dispatch threads that handles connections.
+
+    Attributes:
+        s (socket): The socket that a message should be received from.
+    """
+    def __init__(self, s: socket.socket):
+        self.current_socket = s
+    
+    def receive_process(self):
+        try:
+            with self.current_socket:
+                received_message = self._receive_client_message()
+                self._determine_action(received_message)
+        
+        except ProtocolViolationError as error:
+            print("Dropped a message due to violation of protocol.")
+    
+    def _receive_client_message(self) -> Message:
+        # fetch fixed header
+        fixed_header_size = 2
+        buffer = self._receive_bytes(fixed_header_size)
+        if len(buffer) < 2:
+            raise ProtocolViolationError("Message received not correct length.")
+        
+        header = buffer[:fixed_header_size]
+        msg_len = deserialize_two_byte_header(header)
+        # fetch rest of message
+        buffer = buffer[fixed_header_size:]
+        buffer = self._receive_bytes(msg_len, buffer)
+        if len(buffer) < msg_len:
+            raise ProtocolViolationError("Message received not correct length.")
+        
+        msg_content = deserialize_json_object(buffer)
+        message = reassemble_message(msg_content)
+        return message
+    
+    def _receive_bytes(self, qty_bytes: int, buffer=b''):
+        buffer_length = len(buffer)
+        while buffer_length < qty_bytes:
+            data = self.current_socket.recv(4096)
+            if not data:
+                break
+            buffer += data
+            buffer_length = len(buffer)
+        return buffer
+    
+    def _determine_action(self, message: Message):
+        """
+        Determines what action should be taken for a message.
+        
+        :param message:
+        :return:
+        """
+        raise NotImplementedError
 
 
 class ProtocolViolationError(Exception):
@@ -131,31 +248,31 @@ def reassemble_message(message_content: Dict[str, str]) -> Message:
         raise ProtocolViolationError(error_msg_format)
 
 
-def has_valid_sender_format(message: Message) -> bool:
+def valid_sender_format(message: Message) -> bool:
     if type(message.sender) is not str or len(message.sender) == 0:
         return False
     return True
 
 
-def has_valid_receiver_format(message: Message) -> bool:
+def valid_receiver_format(message: Message) -> bool:
     if type(message.receiver) is not str or len(message.receiver) == 0:
         return False
     return True
 
 
-def has_valid_content_format(message: Message) -> bool:
+def valid_content_format(message: Message) -> bool:
     if type(message.content) is not str or len(message.content) == 0:
         return False
     return True
 
 
 def validate_request_message_format(message: Message) -> None:
-    if not message.msg_type == Message.TYPE_REQUEST_NEW_MESSAGES or \
+    if not message.msg_type == Message.REQUEST_NEW_MESSAGES or \
             not message.content.isdigit() or \
-            not has_valid_content_format(message) or \
-            not has_valid_sender_format(message) or \
-            not has_valid_receiver_format(message):
+            not valid_content_format(message) or \
+            not valid_sender_format(message) or \
+            not valid_receiver_format(message):
         raise MessageCorruptError(
-            "Message does not conform to TYPE_REQUEST_NEW_MESSAGES format," +
+            "Message does not conform to REQUEST_NEW_MESSAGES format," +
             " message:" + str(message))
 

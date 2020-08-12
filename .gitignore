@@ -1,7 +1,6 @@
 .idea/*
 venv/*
-server/__pycache__/*
-server/test.py
-chat_helper_lib/__pycache__/*
-database/*
-client/__pycache__/*
+test.py
+*/__pycache__/*
+__pycache__
+client_database/*

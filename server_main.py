@@ -1,12 +1,11 @@
 #!/bin/usr/python3
 import socket
 from typing import Tuple
-from server.server_message_handler import ServerMessageHandler
-from server.server_database_handler import ServerDatabaseHandler
+from server import ServerConnectionController, ServerDBHandler
 
 
 def open_connection(address: Tuple[str, int],
-                    db_handler: ServerDatabaseHandler):
+                    db_handler: ServerDBHandler):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         server_socket.bind(address)
         server_socket.listen()
@@ -14,7 +13,7 @@ def open_connection(address: Tuple[str, int],
             try:
                 client_socket, client_addr = server_socket.accept()
                 print("Connected to {}:{}".format(client_addr[0], client_addr[1]))
-                msg_handler = ServerMessageHandler(client_socket, db_handler)
+                msg_handler = ServerConnectionController(client_socket, db_handler)
                 msg_handler.receive_process()
             except KeyboardInterrupt:
                 break
@@ -24,9 +23,9 @@ def open_connection(address: Tuple[str, int],
 def main():
     # hostname = socket.gethostname()
     hostname = "127.0.0.1"
-    port_number = 55679
+    port_number = 55678
     address = (hostname, port_number)
-    db_handler = ServerDatabaseHandler()
+    db_handler = ServerDBHandler()
     open_connection(address, db_handler)
 
 
