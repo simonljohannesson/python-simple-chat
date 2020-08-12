@@ -1,15 +1,10 @@
 #!/bin/usr/python
+from typing import Tuple
 import database
 import client
 import os
-import threading
-from client import DBHandler
-from database import create_chat_identifier
-from protocol import Message
 import protocol
-import time
 import socket
-import json
 
 
 PATH_TO_DATABASE = "../client_database/client.db"
@@ -18,13 +13,10 @@ PATH_TO_DATABASE = "../client_database/client.db"
 
 class ClientSession:
     def __init__(self,
-                 db_handler: client.DBHandler):
+                 db_handler: client.DBHandler,
+                 server_address: Tuple[str, int]):
         self.db_handler = db_handler
-        
-    def _server_config(self, server_hostname: str, server_port_no: int):
-        self.server_hostname = server_hostname
-        self.server_port_no = server_port_no
-        self.server_address = (self.server_hostname, self.server_port_no)
+        self.server_address = server_address
     
     def _log_in_user(self,  user_name: str):
         self.user_name = user_name
@@ -47,8 +39,7 @@ class ClientSession:
         self._log_in_user(user_name)
 
     def open_chat(self, other_user: str) -> client.ThreadKillFlag:
-        self._server_config("127.0.0.1", 55678)
-        self._establish_connection()
+        self._test_connection()
         self._add_other_user(other_user)
         kill_flag = self._dispatch_background_update_thread()
         return kill_flag
@@ -57,7 +48,7 @@ class ClientSession:
         bg_update_db_kill_flag.kill = True
         # TODO: anything else?
         
-    def _establish_connection(self):
+    def _test_connection(self):
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.settimeout(5)
@@ -71,7 +62,7 @@ class ClientSession:
             raise timeout
         
     def send_chat_message(self, text: str):
-        message = Message(Message.CHAT_MESSAGE,
+        message = protocol.Message(protocol.Message.CHAT_MESSAGE,
                           text,
                           self.user_name,
                           self.other_user)
@@ -170,8 +161,12 @@ class ClientView:
 
 
 def main():
+    hostname = "127.0.0.1"
+    port_number = 55678
+    server_address = (hostname, port_number)
+    
     chat_db = client.DBHandler(PATH_TO_DATABASE)
-    client_session = ClientSession(chat_db)
+    client_session = ClientSession(chat_db, server_address)
     client_view = ClientView(client_session)
     client_view.run()
     

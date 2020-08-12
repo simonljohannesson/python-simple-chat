@@ -90,64 +90,6 @@ class Message:
                               receiver=self.receiver)
 
 
-class ConnectionController:
-    """
-    Class used to dispatch threads that handles connections.
-
-    Attributes:
-        s (socket): The socket that a message should be received from.
-    """
-    def __init__(self, s: socket.socket):
-        self.current_socket = s
-    
-    def receive_process(self):
-        try:
-            with self.current_socket:
-                received_message = self._receive_client_message()
-                self._determine_action(received_message)
-        
-        except ProtocolViolationError as error:
-            print("Dropped a message due to violation of protocol.")
-    
-    def _receive_client_message(self) -> Message:
-        # fetch fixed header
-        fixed_header_size = 2
-        buffer = self._receive_bytes(fixed_header_size)
-        if len(buffer) < 2:
-            raise ProtocolViolationError("Message received not correct length.")
-        
-        header = buffer[:fixed_header_size]
-        msg_len = deserialize_two_byte_header(header)
-        # fetch rest of message
-        buffer = buffer[fixed_header_size:]
-        buffer = self._receive_bytes(msg_len, buffer)
-        if len(buffer) < msg_len:
-            raise ProtocolViolationError("Message received not correct length.")
-        
-        msg_content = deserialize_json_object(buffer)
-        message = reassemble_message(msg_content)
-        return message
-    
-    def _receive_bytes(self, qty_bytes: int, buffer=b''):
-        buffer_length = len(buffer)
-        while buffer_length < qty_bytes:
-            data = self.current_socket.recv(4096)
-            if not data:
-                break
-            buffer += data
-            buffer_length = len(buffer)
-        return buffer
-    
-    def _determine_action(self, message: Message):
-        """
-        Determines what action should be taken for a message.
-        
-        :param message:
-        :return:
-        """
-        raise NotImplementedError
-
-
 class ProtocolViolationError(Exception):
     def __init__(self, msg: str):
         self.msg = msg
