@@ -1,4 +1,4 @@
-# database_handler.py
+# database.py
 """
 This module is designed to create and operate on an sqlite3 database with the
 specifications described further down.

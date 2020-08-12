@@ -1,7 +1,7 @@
 import threading
 from typing import Tuple
 from client_database_handler import ClientDatabaseHandler
-from chat_helper_lib.database_handler import create_chat_identifier
+from chat_helper_lib.database import create_chat_identifier
 from chat_helper_lib.message import Message
 from chat_helper_lib import protocol_handler
 import time

@@ -1,6 +1,6 @@
 from threading import Lock
-from chat_helper_lib.database_handler import DatabaseHandler
-import chat_helper_lib.database_handler as database_handler
+from chat_helper_lib.database import DatabaseHandler
+import chat_helper_lib.database as database_handler
 import sqlite3
 from chat_helper_lib.message import Message
 from chat_helper_lib import protocol_handler

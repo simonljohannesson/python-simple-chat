@@ -1,5 +1,5 @@
-from chat_helper_lib import database_handler, message
-from chat_helper_lib.database_handler import DatabaseHandler
+from chat_helper_lib import database, message
+from chat_helper_lib.database import DatabaseHandler
 import sqlite3
 from typing import List
 
@@ -44,10 +44,10 @@ class ClientDatabaseHandler(DatabaseHandler):
         if not last_message < msgs_avail_in_db:
             return message_list
         for i in range(last_message + 1, msgs_avail_in_db + 1):
-            msg_identifier = database_handler.create_message_identifier(
+            msg_identifier = database.create_message_identifier(
                 chat_identifier, i)
             msg_row = self._request_specific_chat_message(con, msg_identifier)
-            msg = database_handler.convert_chat_msgs_table_row_to_msg(msg_row)
+            msg = database.convert_chat_msgs_table_row_to_msg(msg_row)
             message_list.append(msg)
         return message_list
 

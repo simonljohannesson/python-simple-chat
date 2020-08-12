@@ -1,7 +1,7 @@
 #!/bin/usr/python
 import socket
 from chat_helper_lib.message import *
-from chat_helper_lib import protocol_handler, database_handler
+from chat_helper_lib import protocol_handler, database
 import client.client_database_handler as client_database_handler
 # test module
 from server.test import dump_data_in_chat_messages_amount_table, dump_data_in_chat_messages_table
@@ -40,7 +40,7 @@ class ClientSession:
         self._log_in_user(user_name)
 
     def open_chat(self, other_user: str) -> ThreadKillFlag:
-        self._server_config("127.0.0.1", 55678)
+        self._server_config("127.0.0.1", 55679)
         self._establish_connection()
         self._add_other_user(other_user)
         kill_flag = self._dispatch_background_update_thread()
@@ -78,7 +78,7 @@ class ClientSession:
             s.close()
             
     def fetch_new_messages(self, last_message: int):
-        chat_identifier = database_handler.create_chat_identifier(
+        chat_identifier = database.create_chat_identifier(
             self.user_name, self.other_user)
         
         new_msgs = self.db_handler.fetch_new_messages(chat_identifier,
