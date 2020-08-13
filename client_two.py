@@ -10,7 +10,6 @@ import socket
 
 PATH_TO_DATABASE = "./cl2db/client2.db"
 
-
 class ClientSession:
     def __init__(self,
                  db_handler: client.DBHandler,
@@ -83,16 +82,12 @@ class ClientSession:
         return new_msgs
 
 
-class UserInteraction:
-    pass
-
-
 class ClientViewPrinter(client.RefresherObserver):
     def __init__(self, client_session: ClientSession):
         self.client_session = client_session
         self.chat_messages_of_session = []
     
-    def add_usernames(self, username, chat_with):
+    def _add_usernames(self, username, chat_with):
         self.username = username
         self.chat_with = chat_with
     
@@ -104,7 +99,8 @@ class ClientViewPrinter(client.RefresherObserver):
             cmd = "clr"
         os.system(cmd)
     
-    def print_welcome_message(self):
+    def print_welcome_message(self, username, chat_with):
+        self._add_usernames(username, chat_with)
         welcome = "Welcome {}!\n You are now chatting with {}.".format(
             self.username, self.chat_with)
         print(welcome)
@@ -119,6 +115,9 @@ class ClientViewPrinter(client.RefresherObserver):
         chat_with_prompt = "Enter username of whoever you want to talk to: " \
                            "(1-30 alpha numeric characters)"
         print(chat_with_prompt)
+    
+    def print_username_invalid(self):
+        print("Username invalid.")
     
     def print_chat_messages(self):
         self.clear_terminal()
@@ -149,6 +148,9 @@ class ClientViewPrinter(client.RefresherObserver):
         for each in new_msgs:
             self.chat_messages_of_session.append(each)
     
+    def print_newest_messages(self):
+        self.new_messages_found()
+    
     def new_messages_found(self):
         """
         When called will fetch all new messages and print them to the user.
@@ -159,75 +161,10 @@ class ClientViewPrinter(client.RefresherObserver):
         self.print_chat_messages()
 
 
-class ClientView:
-    def __init__(self, client_session: ClientSession):
+class UserInteraction:
+    def __init__(self, client_session: ClientSession, view_printer: ClientViewPrinter):
         self.client_session = client_session
-    
-    def run(self, refresher_observer: client.RefresherObserver):
-        self.clear_terminal()
-        user_name_prompt = "Enter username: (1-30 alpha numeric characters)"
-        user_name = self.request_and_validate_user_name_input(user_name_prompt)
-        chat_with_prompt = "Enter username of whoever you want to talk to: " \
-                           "(1-30 alpha numeric characters)"
-        chat_with = self.request_and_validate_user_name_input(chat_with_prompt)
-        print("Welcome {}!".format(user_name))
-        print("Now chatting with {}.".format(chat_with))
-        # user_name = "user1"
-        # chat_with = "user2"
-        # user_input = "hello"
-        
-        self.client_session.log_in(user_name)
-        bg_thread_kill_flag = self.client_session.open_chat(chat_with, refresher_observer)
-        
-        chat_messages = []
-        chat_open = True
-        help_msg = "You have a few options:\n" \
-                   "1. Send message: enter message and press return.\n" \
-                   "2. Fetch new messages: enter 'fetch()' and press return\n" \
-                   "3. Show this help message: enter 'help()' and press return" \
-                   "4. Exit session: enter 'exit()' and press return"
-        while chat_open:
-            print("Enter your message and press return to send.",
-                  "(For help enter: 'help()' and press return)")
-            try:
-                user_input = input()
-            except KeyboardInterrupt:
-                user_input = "exit()"
-            if user_input == "help()":
-                self.clear_terminal()
-                print(help_msg)
-            elif user_input == "fetch()":
-                new_msgs = self.client_session.fetch_new_messages(
-                    len(chat_messages))
-                for each in new_msgs:
-                    chat_messages.append(each)
-                self.clear_terminal()
-                print("============= Messages in chat with: {} =============".format(chat_with))
-                for msg in chat_messages:
-                    print("{} said: {}".format(msg.sender, msg.content))
-                print("============= End of messages ============")
-            elif user_input == "exit()":
-                chat_open = False
-                bg_thread_kill_flag.kill = True
-            else:
-                self.client_session.send_chat_message(user_input)
-    
-    def request_and_validate_user_name_input(self, prompt: str) -> str:
-        user_name_valid = False
-        user_name = ""
-        while not user_name_valid:
-            print(prompt)
-            user_name = input()
-            user_name_valid = self.validate_user_name(user_name)
-        return user_name
-    
-    def clear_terminal(self):
-        cmd = ""
-        if os.name == "posix":
-            cmd = "clear"
-        else:
-            cmd = "clr"
-        os.system(cmd)
+        self.view_printer = view_printer
     
     def validate_user_name(self, user_name: str):
         if user_name.isalnum() and len(user_name) < 31:
@@ -235,20 +172,60 @@ class ClientView:
             return True
         else:
             return False
+    
+    def request_and_validate_user_name_input(self) -> str:
+        user_name_valid = False
+        user_name = ""
+        while not user_name_valid:
+            user_name = input()
+            user_name_valid = self.validate_user_name(user_name)
+            if not user_name_valid:
+                self.view_printer.print_username_invalid()
+        return user_name
+    
+    def run(self, refresher_observer: client.RefresherObserver):
+        self.view_printer.prompt_for_username()
+        username = self.request_and_validate_user_name_input()
+        self.view_printer.prompt_who_to_chat_with()
+        chat_with = self.request_and_validate_user_name_input()
+        
+        self.client_session.log_in(username)
+        self.view_printer.print_welcome_message(username, chat_with)
+        
+        bg_thread_kill_flag = self.client_session.open_chat(chat_with, refresher_observer)
+        
+        chat_messages = []
+        chat_open = True
+        while chat_open:
+            self.view_printer.print_enter_message_prompt()
+            try:
+                user_input = input()
+            except KeyboardInterrupt:
+                user_input = "exit()"
+            if user_input == "help()":
+                self.view_printer.print_help_message()
+            elif user_input == "fetch()":
+                self.view_printer.print_chat_messages()
+            elif user_input == "exit()":
+                # close chat and shutdown background refresh thread
+                chat_open = False
+                bg_thread_kill_flag.kill = True
+            else:
+                self.client_session.send_chat_message(user_input)
 
 
 def main():
     hostname = "127.0.0.1"
-    port_number = 55678
+    port_number = 55677
     server_address = (hostname, port_number)
     
     chat_db = client.DBHandler(PATH_TO_DATABASE)
     client_session = ClientSession(chat_db, server_address)
-    client_view = ClientView(client_session)
-    r_o = ClientViewPrinter(client_session)
-    client_view.run(r_o)
+    view_printer = ClientViewPrinter(client_session)
+    user_interaction = UserInteraction(client_session, view_printer)
+    user_interaction.run(view_printer)
 
 
 if __name__ == "__main__":
-    print("client 2: {}".format(subprocess.run("pwd", stdout=subprocess.PIPE).stdout))
+    print("client 1: {}".format(subprocess.run("pwd", stdout=subprocess.PIPE).stdout))
     main()
