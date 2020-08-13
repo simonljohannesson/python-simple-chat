@@ -5,7 +5,14 @@ from server import ServerConnectionController, ServerDBHandler
 
 
 def open_connection(address: Tuple[str, int],
-                    db_handler: ServerDBHandler):
+                    db_handler: ServerDBHandler) -> None:
+    """
+    Opens the server to listen for incomming messages.
+    
+    :param address: the address that the server should open at.
+    :param db_handler: the database handler for the server
+    :return: None
+    """
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         server_socket.bind(address)
         server_socket.listen()
@@ -21,6 +28,7 @@ def open_connection(address: Tuple[str, int],
 
 
 def main():
+    """Starts the server."""
     # hostname = socket.gethostname()
     hostname = "127.0.0.1"
     port_number = 55677
