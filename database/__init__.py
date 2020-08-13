@@ -63,6 +63,9 @@ import protocol
 
 
 class Handler:
+    """
+    Class that handles the database.
+    """
     def __init__(self):
         self.database_lock = threading.Lock()
 
@@ -74,6 +77,7 @@ class Handler:
         """
         Inserts a new row in the chat_messages table.
         
+        :param connection: the connection to the database.
         :param message_identifier: the message identifier in the database
         :param message: message that should be added to the database
         :param sender: sender of the message
@@ -95,6 +99,7 @@ class Handler:
         
         :raises NotPresentInDatabase: Raised when the specified message does not
                                       exist in the database.
+        :param connection: the connection to the database.
         :param message_identifier: the message identifier
         :return: a tuple of the row containing the specific chat message
         """
@@ -125,7 +130,7 @@ class Handler:
         Queries the database how many messages are saved to the chat_identifiers chat.
         
         If the chat_identifier is not found in the database the return value will be 0.
-        :param connection:
+        :param connection: the connection to the database.
         :param chat_identifier: the chats identifier
         :return: the number of messages that are in the chat
         """
@@ -151,8 +156,9 @@ class Handler:
                                         connection: sqlite3.Connection,
                                         chat_identifier: str) -> None:
         """
-        Increments the total message amount in the database for the chat with the chat identifier.
-        :param chat_identifier: the chat identifier
+        Increments the total message amount in the database for the chat.
+        :param connection: the connection to the database.
+        :param chat_identifier: the chat identifier of the chat to increment
         :return: None
         """
         sql_cmd = """
@@ -177,7 +183,7 @@ class Handler:
         """
         Stores a chat message in the database.
         
-        :param connection:
+        :param connection: the connection to the database.
         :param message: the message that should be saved
         :return: None
         """
@@ -266,6 +272,11 @@ def create_message_identifier(chat_identifier: str,
 
 
 def table_row_to_msg(row: typing.Tuple[str, str, str]) -> protocol.Message:
+    """
+    Translates a row of the chat messages table into a Message object.
+    :param row: the row that should be translated
+    :return: the row as a Message object.
+    """
     message_identifier = row[0]
     content = row[1]
     sender = row[2]
@@ -283,4 +294,7 @@ def table_row_to_msg(row: typing.Tuple[str, str, str]) -> protocol.Message:
 
 
 class NotPresentInDatabase(Exception):
+    """
+    Exception that signals that something is not present in the database.
+    """
     pass
