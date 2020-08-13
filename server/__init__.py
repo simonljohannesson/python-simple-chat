@@ -8,6 +8,9 @@ import json
 
 
 class ServerDBHandler(database.Handler):
+    """
+    Class that handles the servers database.
+    """
     def __init__(self):
         super().__init__()
         self.database_lock = threading.Lock()
@@ -29,6 +32,13 @@ class ServerDBHandler(database.Handler):
         return connection
     
     def get_new_messages(self, message: protocol.Message) -> protocol.Message:
+        """
+        Returns any messages in the database newer than the message specified.
+        :raises database.NotPresentInDatabase: when no newer messages exist.
+        :param message: message with type REQUEST_NEW_MESSAGES and its content
+                        contains the number of the last message it has
+        :return: a message containing serialized messages in its content
+        """
         protocol.validate_request_message_format(message)
         clients_last_message = int(message.content)
         chat_identifier = database.create_chat_identifier(
@@ -64,11 +74,20 @@ class ServerDBHandler(database.Handler):
 
 
 class ServerConnectionController():
+    """
+    Class that controlls the connections being made to the server.
+    """
     def __init__(self, s: socket.socket, db_handler: ServerDBHandler):
         self.current_socket = s
         self.db_handler = db_handler
 
     def receive_process(self):
+        """
+        Receives and processes a message.
+        
+        If the message protocol is not followed the message will be dropped.
+        :return:
+        """
         try:
             with self.current_socket:
                 received_message = self._receive_client_message()
@@ -78,6 +97,13 @@ class ServerConnectionController():
             print("Dropped a message due to violation of protocol.")
 
     def _receive_client_message(self) -> protocol.Message:
+        """
+        Receives an incoming message and turns it into a protocol.Message.
+        
+        :raises protocol.ProtocolViolationError: if the received message does
+                not follow protocol
+        :return:
+        """
         # fetch fixed header
         fixed_header_size = 2
         buffer = self._receive_bytes(fixed_header_size)
@@ -99,6 +125,15 @@ class ServerConnectionController():
         return message
 
     def _receive_bytes(self, qty_bytes: int, buffer=b''):
+        """
+        Receives at least the specified amount of bytes.
+        
+        The bytes will be added to the buffer, if any is passed otherwise a new
+        buffer, and then returned.
+        :param qty_bytes: amount of bytes to receive at minimum
+        :param buffer: buffer that will be appended with the received bytes
+        :return: buffer containing at least the specified amount of bytes
+        """
         buffer_length = len(buffer)
         while buffer_length < qty_bytes:
             data = self.current_socket.recv(4096)
