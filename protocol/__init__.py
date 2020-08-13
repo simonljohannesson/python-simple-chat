@@ -41,8 +41,8 @@ class Message:
             * content:      non-empty string, id of last number received
             * sender:       non-empty string
             * receiver:     non-empty string
-        TODO: NEW_MESSAGES
-            * content:      non-empty string, a list of serialized messages
+        NEW_MESSAGES
+            * content:      non-empty sting, serialized list containing serialized messages
     
     Attributes
         CHAT_MESSAGE -- message msg_type used when message is a chat message
