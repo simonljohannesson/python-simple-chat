@@ -13,6 +13,9 @@ PATH_TO_DATABASE = "./cl1db/client1.db"
 
 
 class ClientSession:
+    """
+    Class that handles the chat session for the client.
+    """
     def __init__(self,
                  db_handler: client.DBHandler,
                  server_address: typing.Tuple[str, int]):
@@ -25,8 +28,16 @@ class ClientSession:
     def _add_other_user(self, other_user: str):
         self.other_user = other_user
     
-    def _dispatch_background_update_thread(self, refresher_observer: client.RefresherObserver) -> client.ThreadKillFlag:
+    def _dispatch_background_update_thread(
+            self, refresher_observer: client.RefresherObserver
+                                          ) -> client.ThreadKillFlag:
+        """
+        Dispatches a thread that updates the clients database by continuously
+        sending query messages to the server.
         
+        :param refresher_observer: observer that should be added to the thread.
+        :return: a flag that kill the background thread if set to true
+        """
         kill_flag = client.ThreadKillFlag()
         bg_thread = client.BackgroundDatabaseRefresher(self.server_address,
                                                        self.db_handler,
@@ -38,19 +49,37 @@ class ClientSession:
         return kill_flag
     
     def log_in(self, user_name: str):
+        """Logs the user name for the chat session."""
         self._log_in_user(user_name)
     
-    def open_chat(self, other_user: str, refresher_observer: client.RefresherObserver) -> client.ThreadKillFlag:
+    def open_chat(self,
+                  other_user: str,
+                  refresher_observer: client.RefresherObserver
+                  ) -> client.ThreadKillFlag:
+        """
+        Lets the user chat with the other user.
+        
+        :param other_user: username of the other user
+        :param refresher_observer: the object that needs to know when the refresher has got new messages
+        :return: a flag that kill the background thread if set to true
+        """
         self._test_connection()
         self._add_other_user(other_user)
         kill_flag = self._dispatch_background_update_thread(refresher_observer)
         return kill_flag
     
-    def close_chat(self, bg_update_db_kill_flag: client.ThreadKillFlag):
+    def close_chat(self, bg_update_db_kill_flag: client.ThreadKillFlag) -> None:
+        """
+        Closes the chat.
+        
+        :param bg_update_db_kill_flag: kill flag of the thread that updates the database in the background.
+        :return: None
+        """
         bg_update_db_kill_flag.kill = True
         # TODO: anything else?
     
     def _test_connection(self):
+        """Crude test if there is a connection available to the server."""
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.settimeout(5)
@@ -62,8 +91,13 @@ class ClientSession:
             print("Could not connect to {}:{}, connection timed out.".format(
                 self.server_address[0], self.server_address[1]))
             raise timeout
-    
-    def send_chat_message(self, text: str):
+ 
+    def send_chat_message(self, text: str) -> None:
+        """
+        Sends a chat message to the other party in the chat.
+        :param text: text of the text message
+        :return: None
+        """
         message = protocol.Message(protocol.Message.CHAT_MESSAGE,
                                    text,
                                    self.user_name,
@@ -77,7 +111,12 @@ class ClientSession:
         finally:
             s.close()
     
-    def fetch_new_messages(self, last_message: int):
+    def fetch_new_messages(self, last_message: int) -> typing.List[protocol.Message]:
+        """
+        Collects new messages from the client database.
+        :param last_message: integer value of the last message that is stored in client session
+        :return: list of the new messages available
+        """
         chat_identifier = database.create_chat_identifier(
             self.user_name, self.other_user)
         new_msgs = self.db_handler.new_messages(chat_identifier, last_message)
@@ -85,6 +124,9 @@ class ClientSession:
 
 
 class ClientViewPrinter(client.RefresherObserver):
+    """
+    Class that handles any standard output of the user interaction.
+    """
     def __init__(self, client_session: ClientSession):
         self.client_session = client_session
         self.chat_messages_of_session = []
@@ -94,6 +136,10 @@ class ClientViewPrinter(client.RefresherObserver):
         self.chat_with = chat_with
     
     def clear_terminal(self):
+        """
+        Clears the terminal from output.
+        :return:
+        """
         cmd = ""
         if os.name == "posix":
             cmd = "clear"
@@ -145,12 +191,20 @@ class ClientViewPrinter(client.RefresherObserver):
         print(message)
     
     def collect_new_messages(self):
+        """
+        Collects the new chat messages and stores them for output to the user.
+        :return: None
+        """
         new_msgs = self.client_session.fetch_new_messages(
             len(self.chat_messages_of_session))
         for each in new_msgs:
             self.chat_messages_of_session.append(each)
     
     def print_newest_messages(self):
+        """
+        Fetches new messages if there are any and prints the messages.
+        :return:
+        """
         self.new_messages_found()
     
     def new_messages_found(self):
@@ -164,18 +218,26 @@ class ClientViewPrinter(client.RefresherObserver):
 
 
 class UserInteraction:
+    """
+    Class that handles all user interaction.
+    """
     def __init__(self, client_session: ClientSession, view_printer: ClientViewPrinter):
         self.client_session = client_session
         self.view_printer = view_printer
 
     def validate_user_name(self, user_name: str):
+        """Checks if a username has correct format."""
         if user_name.isalnum() and len(user_name) < 31:
-            # TODO: validate name against server
+            # TODO: could validate name against server
             return True
         else:
             return False
 
     def request_and_validate_user_name_input(self) -> str:
+        """Takes user input until a valid username has been entered.
+        
+        :return: a username in a valid format
+        """
         user_name_valid = False
         user_name = ""
         while not user_name_valid:
@@ -185,7 +247,12 @@ class UserInteraction:
                 self.view_printer.print_username_invalid()
         return user_name
     
-    def run(self, refresher_observer: client.RefresherObserver):
+    def start(self, refresher_observer: client.RefresherObserver) -> None:
+        """
+        Starts the user interaction.
+        :param refresher_observer: observer that observes the background update thread.
+        :return: None
+        """
         self.view_printer.prompt_for_username()
         username = self.request_and_validate_user_name_input()
         self.view_printer.prompt_who_to_chat_with()
@@ -216,18 +283,21 @@ class UserInteraction:
                 self.client_session.send_chat_message(user_input)
 
 
-def main():
+def main() -> None:
+    """
+    Starts the chat on the client side.
+    :return: None
+    """
     hostname = "127.0.0.1"
-    port_number = 55677
+    port_number = 55678
     server_address = (hostname, port_number)
     
     chat_db = client.DBHandler(PATH_TO_DATABASE)
     client_session = ClientSession(chat_db, server_address)
     view_printer = ClientViewPrinter(client_session)
     user_interaction = UserInteraction(client_session, view_printer)
-    user_interaction.run(view_printer)
+    user_interaction.start(view_printer)
     
 
 if __name__ == "__main__":
-    print("client 1: {}".format(subprocess.run("pwd", stdout=subprocess.PIPE).stdout))
     main()

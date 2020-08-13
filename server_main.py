@@ -31,7 +31,7 @@ def main():
     """Starts the server."""
     # hostname = socket.gethostname()
     hostname = "127.0.0.1"
-    port_number = 55677
+    port_number = 55678
     address = (hostname, port_number)
     db_handler = server.ServerDBHandler()
     open_connection(address, db_handler)
