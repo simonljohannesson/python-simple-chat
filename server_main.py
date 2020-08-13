@@ -1,13 +1,13 @@
 #!/bin/usr/python3
 import socket
-from typing import Tuple
-from server import ServerConnectionController, ServerDBHandler
+import typing
+import server
 
 
-def open_connection(address: Tuple[str, int],
-                    db_handler: ServerDBHandler) -> None:
+def open_connection(address: typing.Tuple[str, int],
+                    db_handler: server.ServerDBHandler) -> None:
     """
-    Opens the server to listen for incomming messages.
+    Opens the server to listen for incoming messages.
     
     :param address: the address that the server should open at.
     :param db_handler: the database handler for the server
@@ -20,7 +20,7 @@ def open_connection(address: Tuple[str, int],
             try:
                 client_socket, client_addr = server_socket.accept()
                 print("Connected to {}:{}".format(client_addr[0], client_addr[1]))
-                msg_handler = ServerConnectionController(client_socket, db_handler)
+                msg_handler = server.ServerConnectionController(client_socket, db_handler)
                 msg_handler.receive_process()
             except KeyboardInterrupt:
                 break
@@ -33,7 +33,7 @@ def main():
     hostname = "127.0.0.1"
     port_number = 55677
     address = (hostname, port_number)
-    db_handler = ServerDBHandler()
+    db_handler = server.ServerDBHandler()
     open_connection(address, db_handler)
 
 

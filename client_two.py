@@ -1,6 +1,6 @@
 #!/bin/usr/python
 import subprocess
-from typing import Tuple
+import typing
 import database
 import client
 import os
@@ -8,12 +8,14 @@ import protocol
 import socket
 
 
+# PATH_TO_DATABASE = "./cl1db/client1.db"
 PATH_TO_DATABASE = "./cl2db/client2.db"
+
 
 class ClientSession:
     def __init__(self,
                  db_handler: client.DBHandler,
-                 server_address: Tuple[str, int]):
+                 server_address: typing.Tuple[str, int]):
         self.db_handler = db_handler
         self.server_address = server_address
     
