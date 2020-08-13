@@ -40,6 +40,10 @@ class ServerDBHandler(database.Handler):
         
         message_list = []
         
+        if clients_last_message >= messages_available_in_db:
+            raise database.NotPresentInDatabase(
+                "There are no new messages in the database.")
+        
         # send maximum of 50 messages per request message
         if clients_last_message + 50 + 1 < messages_available_in_db:
             messages_available_in_db = clients_last_message + 50 + 1
@@ -116,9 +120,12 @@ class ServerConnectionController():
             self.db_handler.add_chat_message_to_database(connection, message)
             
         elif message.msg_type == protocol.Message.REQUEST_NEW_MESSAGES:
-            new_msgs = self.db_handler.get_new_messages(message)
-            serialized_new_msgs = protocol.serialize_message(new_msgs)
-            self.current_socket.sendall(serialized_new_msgs)
+            try:
+                new_msgs = self.db_handler.get_new_messages(message)
+                serialized_new_msgs = protocol.serialize_message(new_msgs)
+                self.current_socket.sendall(serialized_new_msgs)
+            except database.NotPresentInDatabase:
+                self.current_socket.close()
         else:
             raise NotImplementedError(
                 "Message type with value {} is not implemented".format(

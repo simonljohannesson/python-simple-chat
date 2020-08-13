@@ -4,15 +4,12 @@ import threading
 import time
 import database
 import protocol
-from protocol import Message
-from database import Handler
 import sqlite3
-from typing import List
 import subprocess
-from typing import Tuple
+import typing
 
 
-class DBHandler(Handler):
+class DBHandler(database.Handler):
     def __init__(self, db_path):
         super().__init__()
         self.db_path = db_path
@@ -47,7 +44,9 @@ class DBHandler(Handler):
             connection.commit()
         connection.close()
     
-    def new_messages(self, chat_identifier: str, last_message: int) -> List[Message]:
+    def new_messages(self,
+                     chat_identifier: str,
+                     last_message: int) -> typing.List[protocol.Message]:
         con = self.open_connection()
         message_list = []
         msgs_avail_in_db = self.total_message_amount(con, chat_identifier)
@@ -93,10 +92,20 @@ class ThreadKillFlag:
         self.kill = False
 
 
+class RefresherObserver:
+    """
+    Class that observes to the BackgroundDatabaseRefresher.
+    """
+    def new_messages_found(self):
+        raise NotImplementedError
+    
+class NoMessageReceived(Exception):
+    pass
+
 class BackgroundDatabaseRefresher(threading.Thread):
     def __init__(self,
-                 server_address: Tuple[str, int],
-                 db_handler: Handler,
+                 server_address: typing.Tuple[str, int],
+                 db_handler: DBHandler,
                  user_name: str,
                  other_user: str,
                  kill_flag: ThreadKillFlag):
@@ -106,6 +115,7 @@ class BackgroundDatabaseRefresher(threading.Thread):
         self.user_name = user_name
         self.other_user = other_user
         self.kill_flag = kill_flag
+        self.refresher_observers = []
     
     def run(self):
         chat_identifier = database.create_chat_identifier(self.user_name,
@@ -115,32 +125,48 @@ class BackgroundDatabaseRefresher(threading.Thread):
             last_message = self.db_handler.total_message_amount(
                 con,
                 chat_identifier)
-            query_msg = Message(Message.REQUEST_NEW_MESSAGES,
+            query_msg = protocol.Message(protocol.Message.REQUEST_NEW_MESSAGES,
                                 last_message,
                                 self.user_name,
                                 self.other_user)
             con.close()
             ser_msg = protocol.serialize_message(query_msg)
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.connect(self.server_address)
-                s.sendall(ser_msg)
-                buffer = b''
-                while True:
-                    data = s.recv(4096)
-                    if not data:
-                        break
-                    buffer += data
-                des_msg = protocol.reassemble_message(
-                    protocol.deserialize_json_object(buffer[2:]))
-                
-                if len(buffer) > 0:
-                    con = self.db_handler.open_connection()
-                    list_of_msgs = json.loads(des_msg.content)
-                    for each in list_of_msgs:
-                        msg_cont = protocol.deserialize_json_object(each)
-                        rec_msg = protocol.reassemble_message(msg_cont)
-                        self.db_handler.add_chat_message_to_database(con, rec_msg)
-                    con.close()
-                s.close()
+                try:
+                    s.connect(self.server_address)
+                    s.sendall(ser_msg)
+                    buffer = b''
+                    while True:
+                        data = s.recv(4096)
+                        if not data:
+                            if len(buffer) == 0:
+                                raise NoMessageReceived
+                            break
+                        buffer += data
+                    des_msg = protocol.reassemble_message(
+                        protocol.deserialize_json_object(buffer[2:]))
+                    
+                    if len(buffer) > 0:
+                        con = self.db_handler.open_connection()
+                        list_of_msgs = json.loads(des_msg.content)
+                        for each in list_of_msgs:
+                            msg_cont = protocol.deserialize_json_object(each)
+                            rec_msg = protocol.reassemble_message(msg_cont)
+                            self.db_handler.add_chat_message_to_database(con, rec_msg)
+                        # tell observers that new messages have been fetched and added
+                        self.update_observers()
+                        con.close()
+                except NoMessageReceived:
+                    pass
+                finally:
+                    s.close()
             time.sleep(2)
             # self.kill_flag.kill = True
+            
+    def add_observer(self, refresher_observer: RefresherObserver):
+        self.refresher_observers.append(refresher_observer)
+    
+    def update_observers(self):
+        for observer in self.refresher_observers:
+            observer.new_messages_found()
+

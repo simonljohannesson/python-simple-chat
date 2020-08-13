@@ -57,15 +57,14 @@ Table 2
 
 """
 import sqlite3
-from typing import Tuple
-from threading import Lock
-from protocol import Message
+import typing
+import threading
 import protocol
 
 
 class Handler:
     def __init__(self):
-        self.database_lock = Lock()
+        self.database_lock = threading.Lock()
 
     def _add_chat_message_row(self,
                               connection: sqlite3.Connection,
@@ -90,7 +89,7 @@ class Handler:
     def _get_chat_message(self,
                           connection: sqlite3.Connection,
                           message_identifier: str
-                          ) -> Tuple[str, str, str]:
+                          ) -> typing.Tuple[str, str, str]:
         """
         Queries the database for a specific chat message.
         
@@ -174,7 +173,7 @@ class Handler:
 
     def add_chat_message_to_database(self,
                                      connection: sqlite3.Connection,
-                                     message: Message) -> None:
+                                     message: protocol.Message) -> None:
         """
         Stores a chat message in the database.
         
@@ -266,7 +265,7 @@ def create_message_identifier(chat_identifier: str,
     return msg_id
 
 
-def table_row_to_msg(row: Tuple[str, str, str]) -> Message:
+def table_row_to_msg(row: typing.Tuple[str, str, str]) -> protocol.Message:
     message_identifier = row[0]
     content = row[1]
     sender = row[2]
@@ -276,7 +275,7 @@ def table_row_to_msg(row: Tuple[str, str, str]) -> Message:
     else:
         receiver = second_user
     
-    message = Message(Message.CHAT_MESSAGE,
+    message = protocol.Message(protocol.Message.CHAT_MESSAGE,
                       content,
                       sender,
                       receiver)

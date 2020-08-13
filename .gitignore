@@ -4,3 +4,5 @@ test.py
 */__pycache__/*
 __pycache__
 client_database/*
+*.db
+.vscode/*
