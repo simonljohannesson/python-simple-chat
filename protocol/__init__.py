@@ -4,21 +4,16 @@ of a Message object, and it is designed to do so while complying with the below
 specification of a serialized message.
 
 Specification of a serialized message.
-    A serialized message shall be composed of three parts, (1) a fixed length
-    header, (2) a variable length header and (3) message content. There shall
-    be nothing between the parts.
+    A serialized message shall be composed of two parts, (1) a fixed length
+    header and (2) the message. There shall be nothing between the parts.
+    
+    The message (2) cannot be longer than 2^16 bytes since that is the biggest
+    number that the fixed length header can represent.
     
     1. Fixed length header
         * An integer that denotes the length of (2) the variable length header.
         * Shall be two bytes long, in big-endian/network byteorder.
-    2. Variable length header
-        * A JSON object
-        * Shall contain key "length": non-empty string denoting the length of (3) the message content.
-        * Shall contain key "encoding" : non-empty string containing the encoding of (3) the message content
-        * Shall contain key "byteorder" : non-empty string denoting byteorder used encoding (3) the message content.
-        * Is encoded in UTF-8
-        * Is of variable length.
-    3. Message content
+    2. The message
         * JSON object
         * Shall contain key "msg_type": non-empty string denoting the message msg_type value.
         * Shall contain key "content", string containing the message content.
@@ -26,7 +21,6 @@ Specification of a serialized message.
 """
 from typing import Dict
 import json
-import socket
 
 
 class InvalidMessageFormatError(Exception):
@@ -47,12 +41,15 @@ class Message:
             * content:      non-empty string, id of last number received
             * sender:       non-empty string
             * receiver:     non-empty string
+        TODO: NEW_MESSAGES
+            * content:      non-empty string, a list of serialized messages
     
     Attributes
         CHAT_MESSAGE -- message msg_type used when message is a chat message
         REQUEST_NEW_MESSAGES -- message msg_type used when requesting new
-                                     messages that are available on server.
-    
+        messages that are available on server\n
+        NEW_MESSAGES -- message msg_type used when sending new messages from the
+        server, sent as a response to type REQUEST_NEW_MESSAGES\n
     """
     CHAT_MESSAGE = 0
     REQUEST_NEW_MESSAGES = 1
@@ -91,11 +88,17 @@ class Message:
 
 
 class ProtocolViolationError(Exception):
+    """
+    Class signaling that the message protocol was violated.
+    """
     def __init__(self, msg: str):
         self.msg = msg
 
 
 class MessageCorruptError(Exception):
+    """
+    Class signaling that the message was received in a corrupt format.
+    """
     def __init__(self, msg: str):
         self.msg = msg
 
@@ -117,6 +120,11 @@ def serialize_message(message: Message) -> bytes:
 
 
 def serialize_message_content(message) -> str:
+    """
+    Takes a message and serializes it according to the protocol specification.
+    :param message: message to be serialized
+    :return: serialized message
+    """
     # message content
     message_content = dict()
     message_content["msg_type"] = message.msg_type
@@ -191,24 +199,45 @@ def reassemble_message(message_content: Dict[str, str]) -> Message:
 
 
 def valid_sender_format(message: Message) -> bool:
+    """
+    Checks if the sender of the message is in a valid REQUEST_NEW_MESSAGES format.
+    :param message: message with the sender that should be validated
+    :return: True if sender is valid, otherwise False
+    """
     if type(message.sender) is not str or len(message.sender) == 0:
         return False
     return True
 
 
 def valid_receiver_format(message: Message) -> bool:
+    """
+    Checks if the receiver of the message is in a valid REQUEST_NEW_MESSAGES format.
+    :param message: message with the receiver that should be validated
+    :return: True if receiver is valid, otherwise False
+    """
     if type(message.receiver) is not str or len(message.receiver) == 0:
         return False
     return True
 
 
 def valid_content_format(message: Message) -> bool:
+    """
+    Checks if the content of the message is in a valid REQUEST_NEW_MESSAGES format.
+    :param message: message with the content that should be validated
+    :return: True if content is valid, otherwise False
+    """
     if type(message.content) is not str or len(message.content) == 0:
         return False
     return True
 
 
 def validate_request_message_format(message: Message) -> None:
+    """
+    Validates the format of a message requesting new messages.
+    
+    :param message: message that should be validated
+    :return:
+    """
     if not message.msg_type == Message.REQUEST_NEW_MESSAGES or \
             not message.content.isdigit() or \
             not valid_content_format(message) or \
